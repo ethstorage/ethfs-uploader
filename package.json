@@ -1,0 +1,27 @@
+{
+  "name": "w3q-deployer",
+  "version": "1.5.0",
+  "description": "A tool to make files easy to deploy on w3q.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "w3q",
+    "web3"
+  ],
+  "author": "jishankai",
+  "license": "MIT",
+  "dependencies": {
+    "colors-cli": "^1.0.28",
+    "eth-ens-namehash": "^2.0.8",
+    "ethers": "^5.5.4",
+    "fs": "^0.0.1-security",
+    "js-sha3": "^0.8.0",
+    "minimist": "^1.2.5",
+    "rxjs": "^7.5.5"
+  },
+  "bin": {
+    "w3q-deploy": "cli.js"
+  }
+}
