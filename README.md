@@ -1,4 +1,4 @@
-# ETHFS Uploader
+# EthFS Uploader
 
 ## Installation
 ```
