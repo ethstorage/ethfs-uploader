@@ -1,7 +1,7 @@
 {
-  "name": "w3q-deployer",
-  "version": "1.5.0",
-  "description": "A tool to make files easy to deploy on w3q.",
+  "name": "ethfs-uploader",
+  "version": "1.0.0",
+  "description": "A tool to make files easy to deploy on ethstorage.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -10,7 +10,7 @@
     "w3q",
     "web3"
   ],
-  "author": "jishankai",
+  "author": "ethstorage",
   "license": "MIT",
   "dependencies": {
     "colors-cli": "^1.0.28",
@@ -22,6 +22,6 @@
     "rxjs": "^7.5.5"
   },
   "bin": {
-    "w3q-deploy": "cli.js"
+    "ethfs-uploader": "cli.js"
   }
 }
