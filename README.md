@@ -1,4 +1,4 @@
-# Web3Q Deployer
+# ETHFS Uploader
 
 ## Installation
 ```
