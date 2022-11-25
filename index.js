@@ -234,6 +234,12 @@ const bufferChunk = (buffer, chunkSize) => {
 
 const recursiveFiles = (path, basePath) => {
   let filePools = [];
+  const fileStat = fs.statSync(path);
+  if (fileStat.isFile()) {
+    filePools.push({path: path, name: path, size: fileStat.size});
+    return filePools;
+  }
+
   const files = fs.readdirSync(path);
   for (let file of files) {
     const fileStat = fs.statSync(`${path}/${file}`);
