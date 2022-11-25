@@ -262,7 +262,7 @@ const uploadFile = async (chainId, fileContract, fileInfo) => {
   const hexName = '0x' + Buffer.from(fileName, 'utf8').toString('hex');
   const content = fs.readFileSync(filePath);
   let chunks = [];
-  if (chainId === GALILEO_CHAIN_ID || chainId === ETHSTORAGE_CHAIN_ID) {
+  if (chainId === GALILEO_CHAIN_ID) {
     // Data need to be sliced if file > 475K
     if (fileSize > 475 * 1024) {
       const chunkSize = Math.ceil(fileSize / (475 * 1024));
@@ -288,7 +288,7 @@ const uploadFile = async (chainId, fileContract, fileInfo) => {
   }
 
   let cost = 0;
-  if ((chainId === GALILEO_CHAIN_ID || chainId === ETHSTORAGE_CHAIN_ID) && (fileSize > 24 * 1024 - 326)) {
+  if ((chainId === GALILEO_CHAIN_ID) && (fileSize > 24 * 1024 - 326)) {
     // eth storage need stake
     cost = Math.floor((fileSize + 326) / 1024 / 24);
   }
