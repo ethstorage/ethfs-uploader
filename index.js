@@ -31,35 +31,48 @@ const factoryAbi = [
   "function create() public returns (address)"
 ];
 
-const SHORT_NAME_MAINNET = "w3q";
 const SHORT_NAME_GALILEO = "w3q-g";
 const SHORT_NAME_ETHEREUM = "eth";
-const SHORT_NAME_RINKEBY = "rin";
+const SHORT_NAME_GOERLI = "gor";
+const SHORT_NAME_SEPOLIA = "sep";
+const SHORT_NAME_OPTIMISTIC = "oeth";
+const SHORT_NAME_ARBITRUM = "arb1";
+const SHORT_NAME_OPTIMISTIC_GOERLI = "ogor";
+const SHORT_NAME_ARBITRUM_GOERLI = "arb-goerli";
+const SHORT_NAME_EVMOS = "evmos";
+const SHORT_NAME_ARBITRUM_NOVE = "arb-nova";
 
-const MAINNET_NETWORK = "mainnet";
-const GALILEO_NETWORK = "galileo";
-const DEVNET_NETWORK = "devnet";
-
-const MAINNET_CHAIN_ID = 333;
 const GALILEO_CHAIN_ID = 3334;
 const ETHEREUM_CHAIN_ID = 1;
-const RINKEBY_CHAIN_ID = 4;
+const GOERLI_CHAIN_ID = 5;
+const SEPOLIA_CHAIN_ID = 11155111;
+const OPTIMISTIC_CHAIN_ID = 10;
+const ARBITRUM_CHAIN_ID = 42161;
+const OPTIMISTIC_GOERLI_CHAIN_ID = 420;
+const ARBITRUM_GOERLI_CHAIN_ID = 421613;
+const EVMOS_CHAIN_ID = 9001;
+const ARBITRUM_NOVE_CHAIN_ID = 42170;
 const DEVNET_CHAIN_ID = 1337;
 
 const PROVIDER_URLS = {
-  [MAINNET_CHAIN_ID]: '',
   [GALILEO_CHAIN_ID]: 'https://galileo.web3q.io:8545',
+  [GOERLI_CHAIN_ID]: 'https://rpc.ankr.com/eth_goerli',
+  [SEPOLIA_CHAIN_ID]: 'https://rpc.sepolia.org',
+  [OPTIMISTIC_CHAIN_ID]: 'https://mainnet.optimism.io',
+  [ARBITRUM_CHAIN_ID]: 'https://arb1.arbitrum.io/rpc',
+  [OPTIMISTIC_GOERLI_CHAIN_ID]: 'https://goerli.optimism.io',
+  [ARBITRUM_GOERLI_CHAIN_ID]: 'https://goerli-rollup.arbitrum.io/rpc',
+  [EVMOS_CHAIN_ID]: 'https://evmos-evm.publicnode.com',
+  [ARBITRUM_NOVE_CHAIN_ID]: 'https://nova.arbitrum.io/rpc',
   [DEVNET_CHAIN_ID]: 'http://localhost:8545',
 }
 const W3NS_ADDRESS = {
-  [MAINNET_CHAIN_ID]: '',
   [GALILEO_CHAIN_ID]: '0xD379B91ac6a93AF106802EB076d16A54E3519CED',
   [ETHEREUM_CHAIN_ID]: '0x00000000000c2e074ec69a0dfb2997ba6c7d2e1e',
-  [RINKEBY_CHAIN_ID]: '0x00000000000c2e074ec69a0dfb2997ba6c7d2e1e',
+  [GOERLI_CHAIN_ID]: '0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e',
   [DEVNET_CHAIN_ID]: '',
 }
 const FACTORY_ADDRESS = {
-  [MAINNET_CHAIN_ID]: '',
   [GALILEO_CHAIN_ID]: '0x1CA0e8be165360296a23907BB482c6640D3aC6ad',
   [DEVNET_CHAIN_ID]: '',
 }
@@ -67,6 +80,8 @@ const FACTORY_ADDRESS = {
 const REMOVE_FAIL = -1;
 const REMOVE_NORMAL = 0;
 const REMOVE_SUCCESS = 1;
+
+const SHORT_NAME_DEFAULT = SHORT_NAME_GALILEO;
 
 let nonce;
 
@@ -94,99 +109,88 @@ function namehash(inputName) {
 }
 
 function get3770NameAndAddress(domain) {
-  if (domain && domain.indexOf(":") !== -1) {
-    const result = domain.split(":");
-    return {shortName: result[0], address: result[1]};
+  const domains = domain.split(":");
+  if (domains.length > 1) {
+    return {shortName: domains[0], address: domains[1]};
+  } else if(domain.endsWith(".eth")) {
+    return {shortName: SHORT_NAME_ETHEREUM, address: domain};
   }
-  return {address: domain};
+  return {shortName: SHORT_NAME_DEFAULT, address: domain};
 }
 
 function getNetWorkIdByShortName(shortName) {
-  let chainId = GALILEO_CHAIN_ID;
+  let chainId = 0;
   switch (shortName) {
-    case SHORT_NAME_MAINNET:
-      chainId = MAINNET_CHAIN_ID;
-      break
     case SHORT_NAME_GALILEO:
       chainId = GALILEO_CHAIN_ID;
       break;
     case SHORT_NAME_ETHEREUM:
       chainId = ETHEREUM_CHAIN_ID;
       break
-    case SHORT_NAME_RINKEBY:
-      chainId = RINKEBY_CHAIN_ID;
+    case SHORT_NAME_GOERLI:
+      chainId = GOERLI_CHAIN_ID;
+      break;
+    case SHORT_NAME_SEPOLIA:
+      chainId = SEPOLIA_CHAIN_ID;
+      break;
+    case SHORT_NAME_OPTIMISTIC:
+      chainId = OPTIMISTIC_CHAIN_ID;
+      break;
+    case SHORT_NAME_ARBITRUM:
+      chainId = ARBITRUM_CHAIN_ID;
+      break;
+    case SHORT_NAME_OPTIMISTIC_GOERLI:
+      chainId = OPTIMISTIC_GOERLI_CHAIN_ID;
+      break;
+    case SHORT_NAME_ARBITRUM_GOERLI:
+      chainId = ARBITRUM_GOERLI_CHAIN_ID;
+      break;
+    case SHORT_NAME_EVMOS:
+      chainId = EVMOS_CHAIN_ID;
+      break;
+    case SHORT_NAME_ARBITRUM_NOVE:
+      chainId = ARBITRUM_NOVE_CHAIN_ID;
       break;
   }
   return chainId;
 }
 
-function getNetWorkIdByDomain(domain) {
-  let chainId = GALILEO_CHAIN_ID;
-  if (domain.endsWith(".eth")) {
-    return ETHEREUM_CHAIN_ID;
-  } else if (domain.endsWith(".w3q")) {
-    chainId = GALILEO_CHAIN_ID;
-  }
-  return chainId;
-}
-
-function getNetWorkId(network, shortName) {
-  let chainId = GALILEO_CHAIN_ID;
-  if (shortName) {
-    chainId = getNetWorkIdByShortName(shortName);
-  }
-  if (network) {
-    switch (network) {
-      case MAINNET_NETWORK:
-        chainId = MAINNET_CHAIN_ID;
-        break
-      case GALILEO_NETWORK:
-        chainId = GALILEO_CHAIN_ID;
-        break;
-      case DEVNET_NETWORK:
-        chainId = DEVNET_CHAIN_ID;
-        break;
-    }
-  }
-  return chainId;
-}
-
 // return address or eip3770 address
-async function getWebHandler(domain, RPC) {
+async function getWebHandler(domain) {
   // get web handler address, domain is address, xxx.ens, xxx.w3q
   const {shortName, address} = get3770NameAndAddress(domain);
-
   // address
   const ethAddrReg = /^0x[0-9a-fA-F]{40}$/;
+  const chainId = getNetWorkIdByShortName(shortName);
   if (ethAddrReg.test(address)) {
-    if (shortName === SHORT_NAME_RINKEBY
-        || shortName === SHORT_NAME_ETHEREUM) {
-      return address;
-    }
-    return domain;
+    return {chainId, address};
   }
 
   // .w3q or .eth domain
-  const chainId = shortName ? getNetWorkIdByShortName(shortName) : getNetWorkIdByDomain(address);
-  if(!RPC && !PROVIDER_URLS[chainId]) {
-    console.log(error(`RPC ERROR: ${RPC}`));
+  let nameServiceContract = W3NS_ADDRESS[chainId];
+  if(!nameServiceContract) {
+    console.log(error(`Not Support Name Service: ${domain}`));
     return "";
   }
 
-  const provider = new ethers.providers.JsonRpcProvider(RPC || PROVIDER_URLS[chainId]);
   let webHandler;
+  const provider = new ethers.providers.JsonRpcProvider(PROVIDER_URLS[chainId]);
   try {
     const nameHash = namehash(address);
-    const wnsContract = new ethers.Contract(W3NS_ADDRESS[chainId], wnsAbi, provider);
+    const wnsContract = new ethers.Contract(nameServiceContract, wnsAbi, provider);
     const resolver = await wnsContract.resolver(nameHash);
     const resolverContract = new ethers.Contract(resolver, resolverAbi, provider);
-    if (chainId === ETHEREUM_CHAIN_ID || chainId === RINKEBY_CHAIN_ID) {
-      webHandler = await resolverContract.text(nameHash, "web3");
-    } else {
+    if (chainId === GALILEO_CHAIN_ID) {
       webHandler = await resolverContract.webHandler(nameHash);
+    } else {
+      webHandler = await resolverContract.text(nameHash, "web3");
     }
   } catch (e){}
-  return webHandler;
+  // address
+  if (ethAddrReg.test(webHandler)) {
+    return {chainId, webHandler};
+  }
+  return get3770NameAndAddress(webHandler);
 }
 
 const getTxReceipt = async (fileContract, transactionHash) => {
@@ -239,7 +243,7 @@ const recursiveFiles = (path, basePath) => {
   return filePools;
 };
 
-const uploadFile = async (fileContract, fileInfo) => {
+const uploadFile = async (chainId, fileContract, fileInfo) => {
   const {path, name, size} = fileInfo;
   const filePath = path;
   const fileName = name;
@@ -247,14 +251,25 @@ const uploadFile = async (fileContract, fileInfo) => {
 
   const hexName = '0x' + Buffer.from(fileName, 'utf8').toString('hex');
   const content = fs.readFileSync(filePath);
-  // Data need to be sliced if file > 475K
   let chunks = [];
-  if (fileSize > 475 * 1024) {
-    const chunkSize = Math.ceil(fileSize / (475 * 1024));
-    chunks = bufferChunk(content, chunkSize);
-    fileSize = fileSize / chunkSize;
+  if (chainId === GALILEO_CHAIN_ID || chainId === ETHSTORAGE_CHAIN_ID) {
+    // Data need to be sliced if file > 475K
+    if (fileSize > 475 * 1024) {
+      const chunkSize = Math.ceil(fileSize / (475 * 1024));
+      chunks = bufferChunk(content, chunkSize);
+      fileSize = fileSize / chunkSize;
+    } else {
+      chunks.push(content);
+    }
   } else {
-    chunks.push(content);
+    // Data need to be sliced if file > 24K
+    if (fileSize > 24 * 1024) {
+      const chunkSize = Math.ceil(fileSize / (24 * 1024));
+      chunks = bufferChunk(content, chunkSize);
+      fileSize = fileSize / chunkSize;
+    } else {
+      chunks.push(content);
+    }
   }
 
   const clearState = await clearOldFile(fileContract, fileName, hexName, chunks.length);
@@ -263,7 +278,8 @@ const uploadFile = async (fileContract, fileInfo) => {
   }
 
   let cost = 0;
-  if (fileSize > 24 * 1024 - 326) {
+  if ((chainId === GALILEO_CHAIN_ID || chainId === ETHSTORAGE_CHAIN_ID) && (fileSize > 24 * 1024 - 326)) {
+    // eth storage need stake
     cost = Math.floor((fileSize + 326) / 1024 / 24);
   }
 
@@ -274,6 +290,7 @@ const uploadFile = async (fileContract, fileInfo) => {
     const hexData = '0x' + chunk.toString('hex');
 
     if (clearState === REMOVE_NORMAL) {
+      // check is change
       const localHash = '0x' + sha3(chunk);
       let hash;
       try {
@@ -295,15 +312,9 @@ const uploadFile = async (fileContract, fileInfo) => {
       });
     } catch (e) {
       await sleep(3000);
-      try {
-        estimatedGas = await fileContract.estimateGas.writeChunk(hexName, index, hexData, {
-          value: ethers.utils.parseEther(cost.toString())
-        });
-      } catch (e) {
-        // transaction is error
-        failFile.push(index);
-        continue;
-      }
+      estimatedGas = await fileContract.estimateGas.writeChunk(hexName, index, hexData, {
+        value: ethers.utils.parseEther(cost.toString())
+      });
     }
 
     // upload file
@@ -326,15 +337,13 @@ const uploadFile = async (fileContract, fileInfo) => {
     let txReceipt;
     try {
       txReceipt = await getTxReceipt(fileContract, tx.hash);
-    } catch (e) {
-      await sleep(3000);
-      txReceipt = await getTxReceipt(fileContract, tx.hash);
-    }
-    if (txReceipt.status) {
+    } catch (e) {}
+    if (txReceipt && txReceipt.status) {
       console.log(`File ${fileName} chunkId: ${index} uploaded!`);
       uploadCount++;
     } else {
       failFile.push(index);
+      break;
     }
   }
 
@@ -381,12 +390,10 @@ const clearOldFile = async (fileContract, fileName, hexName, chunkLength) => {
 // **** utils ****
 
 // **** function ****
-const deploy = async (path, domain, key, RPC, network) => {
-  const pointer = await getWebHandler(domain, RPC);
-  const {shortName, address} = get3770NameAndAddress(pointer);
+const deploy = async (path, domain, key, RPC) => {
+  const {chainId, address} = await getWebHandler(domain);
   if (parseInt(address) > 0) {
-    const chainId = getNetWorkId(network, shortName);
-    const provider = new ethers.providers.JsonRpcProvider(PROVIDER_URLS[chainId]);
+    const provider = new ethers.providers.JsonRpcProvider(RPC || PROVIDER_URLS[chainId]);
     const wallet = new ethers.Wallet(key, provider);
 
     const fileContract = new ethers.Contract(address, fileAbi, wallet);
@@ -397,7 +404,7 @@ const deploy = async (path, domain, key, RPC, network) => {
     // get file and remove old chunk
     console.log("Stark upload File.......");
     from(recursiveFiles(path, ''))
-        .pipe(mergeMap(info => uploadFile(fileContract, info), 15))
+        .pipe(mergeMap(info => uploadFile(chainId, fileContract, info), 15))
         // .returnValue()
         .subscribe(
             (info) => {
@@ -434,11 +441,16 @@ const deploy = async (path, domain, key, RPC, network) => {
   }
 };
 
-const createDirectory = async (key, network) => {
-  const chainId = getNetWorkId(network);
-  const provider = new ethers.providers.JsonRpcProvider(PROVIDER_URLS[chainId]);
+const createDirectory = async (key, chainId) => {
+  const networkId = chainId ?? GALILEO_CHAIN_ID;
+  const factoryAddress = FACTORY_ADDRESS[networkId];
+  if(!factoryAddress) {
+    console.error(`ERROR: Not support this network!`);
+    return;
+  }
+  const provider = new ethers.providers.JsonRpcProvider(PROVIDER_URLS[networkId]);
   const wallet = new ethers.Wallet(key, provider);
-  const factoryContract = new ethers.Contract(FACTORY_ADDRESS[chainId], factoryAbi, wallet);
+  const factoryContract = new ethers.Contract(factoryAddress, factoryAbi, wallet);
   const tx = await factoryContract.create();
   console.log(`Transaction: ${tx.hash}`);
   let txReceipt;
@@ -455,12 +467,10 @@ const createDirectory = async (key, network) => {
   }
 };
 
-const refund = async (domain, key, RPC, network) => {
-  const pointer = await getWebHandler(domain, RPC);
-  const {shortName, address} = get3770NameAndAddress(pointer);
+const refund = async (domain, key, RPC) => {
+  const {chainId, address} = await getWebHandler(domain);
   if (parseInt(address) > 0) {
-    const chainId = getNetWorkId(network, shortName);
-    const provider = new ethers.providers.JsonRpcProvider(PROVIDER_URLS[chainId]);
+    const provider = new ethers.providers.JsonRpcProvider(RPC || PROVIDER_URLS[chainId]);
     const wallet = new ethers.Wallet(key, provider);
     const fileContract = new ethers.Contract(address, fileAbi, wallet);
     const tx = await fileContract.refund();
@@ -480,12 +490,10 @@ const refund = async (domain, key, RPC, network) => {
   }
 };
 
-const setDefault = async (domain, filename, key, RPC, network) => {
-  const pointer = await getWebHandler(domain, RPC);
-  const {shortName, address} = get3770NameAndAddress(pointer);
+const setDefault = async (domain, filename, key, RPC) => {
+  const {chainId, address} = await getWebHandler(domain);
   if (parseInt(address) > 0) {
-    const chainId = getNetWorkId(network, shortName);
-    const provider = new ethers.providers.JsonRpcProvider(PROVIDER_URLS[chainId]);
+    const provider = new ethers.providers.JsonRpcProvider(RPC || PROVIDER_URLS[chainId]);
     const wallet = new ethers.Wallet(key, provider);
 
     const fileContract = new ethers.Contract(address, fileAbi, wallet);
