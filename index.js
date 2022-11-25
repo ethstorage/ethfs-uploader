@@ -188,9 +188,13 @@ async function getWebHandler(domain) {
   } catch (e){}
   // address
   if (ethAddrReg.test(webHandler)) {
-    return {chainId, webHandler};
+    return {chainId, address: webHandler};
   }
-  return get3770NameAndAddress(webHandler);
+  const {shortN, addr} = get3770NameAndAddress(webHandler);
+  return {
+    chainId: getNetWorkIdByShortName(shortN),
+    address: addr
+  };
 }
 
 const getTxReceipt = async (fileContract, transactionHash) => {
@@ -393,7 +397,12 @@ const clearOldFile = async (fileContract, fileName, hexName, chunkLength) => {
 const deploy = async (path, domain, key, RPC) => {
   const {chainId, address} = await getWebHandler(domain);
   if (parseInt(address) > 0) {
-    const provider = new ethers.providers.JsonRpcProvider(RPC || PROVIDER_URLS[chainId]);
+    const providerUrl = PROVIDER_URLS[chainId] ?? RPC;
+    if (!providerUrl) {
+      console.error(error(`ERROR: The network is not supported, please try again after setting RPC!`));
+      return;
+    }
+    const provider = new ethers.providers.JsonRpcProvider(providerUrl);
     const wallet = new ethers.Wallet(key, provider);
 
     const fileContract = new ethers.Contract(address, fileAbi, wallet);
@@ -445,7 +454,7 @@ const createDirectory = async (key, chainId) => {
   const networkId = chainId ?? GALILEO_CHAIN_ID;
   const factoryAddress = FACTORY_ADDRESS[networkId];
   if(!factoryAddress) {
-    console.error(`ERROR: Not support this network!`);
+    console.error(error(`ERROR: Not support this network!`));
     return;
   }
   const provider = new ethers.providers.JsonRpcProvider(PROVIDER_URLS[networkId]);
@@ -470,7 +479,12 @@ const createDirectory = async (key, chainId) => {
 const refund = async (domain, key, RPC) => {
   const {chainId, address} = await getWebHandler(domain);
   if (parseInt(address) > 0) {
-    const provider = new ethers.providers.JsonRpcProvider(RPC || PROVIDER_URLS[chainId]);
+    const providerUrl = PROVIDER_URLS[chainId] ?? RPC;
+    if (!providerUrl) {
+      console.error(error(`ERROR: The network is not supported, please try again after setting RPC!`));
+      return;
+    }
+    const provider = new ethers.providers.JsonRpcProvider(providerUrl);
     const wallet = new ethers.Wallet(key, provider);
     const fileContract = new ethers.Contract(address, fileAbi, wallet);
     const tx = await fileContract.refund();
@@ -493,7 +507,12 @@ const refund = async (domain, key, RPC) => {
 const setDefault = async (domain, filename, key, RPC) => {
   const {chainId, address} = await getWebHandler(domain);
   if (parseInt(address) > 0) {
-    const provider = new ethers.providers.JsonRpcProvider(RPC || PROVIDER_URLS[chainId]);
+    const providerUrl = PROVIDER_URLS[chainId] ?? RPC;
+    if (!providerUrl) {
+      console.error(error(`ERROR: The network is not supported, please try again after setting RPC!`));
+      return;
+    }
+    const provider = new ethers.providers.JsonRpcProvider(providerUrl);
     const wallet = new ethers.Wallet(key, provider);
 
     const fileContract = new ethers.Contract(address, fileAbi, wallet);
