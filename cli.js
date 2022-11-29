@@ -7,7 +7,7 @@ const args = require('minimist')(
 );
 const { create, refund, deploy, setDefault } = require("./index");
 if (args.create) {
-  create(args.privateKey, args.chainId);
+  create(args.privateKey, args.chainId, args.RPC);
 } else if(args.refund) {
   refund(args.address, args.privateKey, args.RPC);
 } else if(args.default) {

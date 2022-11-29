@@ -6,16 +6,45 @@ npm install ethfs-uploader
 ```
 <br/>
 
+## Supported networks
+| Chain Name                 | Chain Short Name and Chain Id |
+|----------------------------|-------------------------------|
+| Ethereum Mainnet           | eth / 1                       | 
+| Goerli Testnet             | gor / 5                       | 
+| Sepolia Testnet            | sep / 11155111                | 
+| Optimism                   | oeth / 10                     | 
+| Optimism Testnet           | ogor / 420                    | 
+| Arbitrum One               | arb1 / 42161                  | 
+| Arbitrum Nova              | arb-nova / 42170              | 
+| Arbitrum Testnet           | arb-goerli / 421613           | 
+| Web3Q Galileo Testnet      | w3q-g / 3334                  | 
+| BNB Smart Chain            | bnb / 56                      | 
+| BNB Smart Chain Testnet    | bnbt / 97                     | 
+| Avalanche C-Chain          | avax / 43114                  | 
+| Avalanche Fuji Testnet     | fuji / 43113                  | 
+| Fantom Opera               | ftm / 250                     | 
+| Fantom Testnet             | tftm / 4002                   | 
+| Polygon Mainnet            | matic / 137                   | 
+| Polygon Mumbai             | maticmum / 80001              | 
+| Polygon zkEVM Testnet      | zkevmtest / 1402              | 
+| QuarkChain Mainnet Shard 0 | qkc-s0 / 100001               |
+| QuarkChain Devnet Shard 0  | qkc-d-s0 / 110001             |
+| Harmony Mainnet Shard 0    | hmy-s0 / 1666600000           |
+| Harmony Testnet Shard 0    | hmy-b-s0 / 1666700000         |
+| Evmos                      | evmos / 9001                  | 
+| Evmos Testnet              | evmos-testnet / 9000          |
+ 
+
 ## Usage
 ### Support EIP-3770 Address
 ```
 ethereum
-    eth:<domain/address>
+    eth:<domain|address>
 
 ... 
 
 galileo
-    w3q-g:<domain/address>       
+    w3q-g:<domain|address>       
 ```
 ##### Example
 ```
@@ -32,14 +61,19 @@ galileo
 
 
 ### Create FlatDirectory Command
+FlatDirectory is created by default on the Galileo network. You can specify to create a network by setting "chainId". If it is Ethereum or an unsupported network, RPC needs to be set.
 ```
 npx ethfs-uploader --create --privateKey <private-key>
+npx ethfs-uploader --create --privateKey <private-key> --chainId <chainId>
+npx ethfs-uploader --create --privateKey <private-key> --chainId <chainId> --RPC <rpc>
 
 // output: contract address 
 ```
 ##### Example
 ```
 npx ethfs-uploader --create --privateKey 0x32...
+npx ethfs-uploader --create --privateKey 0x32... --chainId 5
+npx ethfs-uploader --create --privateKey 0x32... --chainId 1 --RPC https://rpc.ankr.com/eth
 ```
 <br/>
 
@@ -48,18 +82,22 @@ npx ethfs-uploader --create --privateKey 0x32...
 ### Deploy Command
 ```
 ens
-    npx ethfs-uploader <directory/file> <domain> --privateKey <private-key> --RPC <rpc-url>
-
+    npx ethfs-uploader <directory|file> <domain> --privateKey <private-key> --RPC <rpc-url>
 w3ns
-    npx ethfs-uploader <directory/file> <domain/address> --privateKey <private-key>
+    npx ethfs-uploader <directory|file> <domain> --privateKey <private-key>
+other networks
+    npx ethfs-uploader <directory|file> <address> --privateKey <private-key>
+    npx ethfs-uploader <directory|file> <address> --privateKey <private-key> --RPC <rpc-url>
 ```
 ##### Example
 ```
 ens
-    npx ethfs-uploader dist eth:ens.eth --privateKey 0x32... --PRC https://rpc.xxx
-
+    npx ethfs-uploader dir eth:ens.eth --privateKey 0x32... --PRC https://rpc.ankr.com/eth
 w3ns
-    npx ethfs-uploader index.html 0x1825...2388 --privateKey 0x32...
+    npx ethfs-uploader index.html w3q-g:0x1825...2388 --privateKey 0x32...
+other networks
+    npx ethfs-uploader index.html gor:0x1825...2388 --privateKey 0x32...
+    npx ethfs-uploader index.html xxx:0x1825...2388 --privateKey 0x32... --RPC https://rpc.xxx
 ```
 <br/>
 
@@ -68,17 +106,21 @@ w3ns
 ```
 ens
     npx ethfs-uploader --default --address <domain> --file <fileName> --privateKey <private-key> --RPC <rpc-url>
-
 w3ns
-    npx ethfs-uploader --default --address <domain/address> --file <fileName> --privateKey <private-key>
+    npx ethfs-uploader --default --address <domain> --file <fileName> --privateKey <private-key>
+other networks
+    npx ethfs-uploader --default --address <address> --file <fileName> --privateKey <private-key>
+    npx ethfs-uploader --default --address <address> --file <fileName> --privateKey <private-key> --RPC <rpc-url>
 ```
 ##### Example
 ```
 ens
-    npx ethfs-uploader --default --address eth:home.eth --file index.html --privateKey 0x32... --RPC https://rpc.xxx
-
+    npx ethfs-uploader --default --address eth:home.eth --file index.html --privateKey 0x32... --RPC https://rpc.ankr.com/eth
 w3ns
     npx ethfs-uploader --default --address w3q-g:home.w3q --file index.html --privateKey 0x32...
+other networks
+    npx ethfs-uploader --default --address gor:0x1825...2388 --file index.html --privateKey 0x32...
+    npx ethfs-uploader --default --address xxx:0x1825...2388 --file index.html --privateKey 0x32... --RPC https://rpc.xxx
 ```
 <br/>
 
