@@ -197,25 +197,25 @@ function getNetWorkIdByShortName(shortName) {
 async function getWebHandler(domain, RPC) {
   // get web handler address, domain is address, xxx.ens, xxx.w3q
   const {shortName, address} = get3770NameAndAddress(domain);
+  const chainId = getNetWorkIdByShortName(shortName);
+  let providerUrl = RPC ?? PROVIDER_URLS[chainId];
+  if (!providerUrl) {
+    console.error(error(`ERROR: The network need RPC, please try again after setting RPC!`));
+    return;
+  }
+
   // address
   const ethAddrReg = /^0x[0-9a-fA-F]{40}$/;
-  const chainId = getNetWorkIdByShortName(shortName);
   if (ethAddrReg.test(address)) {
-    return {chainId, address};
+    return {providerUrl, chainId, address};
   }
 
   // .w3q or .eth domain
   let nameServiceContract = W3NS_ADDRESS[chainId];
   if(!nameServiceContract) {
     console.log(error(`Not Support Name Service: ${domain}`));
-    return "";
-  }
-  const providerUrl = RPC ?? PROVIDER_URLS[chainId];
-  if (!providerUrl) {
-    console.error(error(`ERROR: The network need RPC, please try again after setting RPC!`));
     return;
   }
-
   let webHandler;
   const provider = new ethers.providers.JsonRpcProvider(providerUrl);
   try {
@@ -231,12 +231,15 @@ async function getWebHandler(domain, RPC) {
   } catch (e){}
   // address
   if (ethAddrReg.test(webHandler)) {
-    return {chainId, address: webHandler};
+    return {providerUrl, chainId, address: webHandler};
   }
-  const {shortN, addr} = get3770NameAndAddress(webHandler);
+  const shortAdd = get3770NameAndAddress(webHandler);
+  const newChainId = getNetWorkIdByShortName(shortAdd.shortName);
+  providerUrl = chainId === newChainId ? providerUrl : PROVIDER_URLS[newChainId];
   return {
-    chainId: getNetWorkIdByShortName(shortN),
-    address: addr
+    providerUrl: providerUrl,
+    chainId: newChainId,
+    address: shortAdd.address
   };
 }
 
@@ -444,13 +447,8 @@ const clearOldFile = async (fileContract, fileName, hexName, chunkLength) => {
 
 // **** function ****
 const deploy = async (path, domain, key, RPC) => {
-  const {chainId, address} = await getWebHandler(domain, RPC);
-  if (parseInt(address) > 0) {
-    const providerUrl = RPC ?? PROVIDER_URLS[chainId];
-    if (!providerUrl) {
-      console.error(error(`ERROR: The network need RPC, please try again after setting RPC!`));
-      return;
-    }
+  const {providerUrl, chainId, address} = await getWebHandler(domain, RPC);
+  if (providerUrl && parseInt(address) > 0) {
     const provider = new ethers.providers.JsonRpcProvider(providerUrl);
     const wallet = new ethers.Wallet(key, provider);
 
@@ -549,13 +547,8 @@ const createDirectory = async (key, chainId, RPC) => {
 };
 
 const refund = async (domain, key, RPC) => {
-  const {chainId, address} = await getWebHandler(domain, RPC);
-  if (parseInt(address) > 0) {
-    const providerUrl = RPC ?? PROVIDER_URLS[chainId];
-    if (!providerUrl) {
-      console.error(error(`ERROR: The network need RPC, please try again after setting RPC!`));
-      return;
-    }
+  const {providerUrl, address} = await getWebHandler(domain, RPC);
+  if (providerUrl && parseInt(address) > 0) {
     const provider = new ethers.providers.JsonRpcProvider(providerUrl);
     const wallet = new ethers.Wallet(key, provider);
     const fileContract = new ethers.Contract(address, fileAbi, wallet);
@@ -577,13 +570,8 @@ const refund = async (domain, key, RPC) => {
 };
 
 const setDefault = async (domain, filename, key, RPC) => {
-  const {chainId, address} = await getWebHandler(domain, RPC);
-  if (parseInt(address) > 0) {
-    const providerUrl = RPC ?? PROVIDER_URLS[chainId];
-    if (!providerUrl) {
-      console.error(error(`ERROR: The network need RPC, please try again after setting RPC!`));
-      return;
-    }
+  const {providerUrl, address} = await getWebHandler(domain, RPC);
+  if (providerUrl && parseInt(address) > 0) {
     const provider = new ethers.providers.JsonRpcProvider(providerUrl);
     const wallet = new ethers.Wallet(key, provider);
 
