@@ -39,12 +39,12 @@ npm install ethfs-uploader
 ### Support EIP-3770 Address
 ```
 ethereum
-    eth:<domain|address>
+    eth:<name|address>
 
 ... 
 
 galileo
-    w3q-g:<domain|address>       
+    w3q-g:<name|address>       
 ```
 ##### Example
 ```
@@ -86,9 +86,9 @@ FlatDirectory address
     npx ethfs-uploader <directory|file> <address> --privateKey <private-key>
     npx ethfs-uploader <directory|file> <address> --privateKey <private-key> --RPC <rpc-url>
 ens
-    npx ethfs-uploader <directory|file> <domain> --privateKey <private-key> --RPC <rpc-url>
+    npx ethfs-uploader <directory|file> <name> --privateKey <private-key> --RPC <rpc-url>
 w3ns
-    npx ethfs-uploader <directory|file> <domain> --privateKey <private-key>
+    npx ethfs-uploader <directory|file> <name> --privateKey <private-key>
 ```
 ##### Example
 ```
@@ -109,9 +109,9 @@ FlatDirectory address
     npx ethfs-uploader --default --address <address> --file <fileName> --privateKey <private-key>
     npx ethfs-uploader --default --address <address> --file <fileName> --privateKey <private-key> --RPC <rpc-url>
 ens
-    npx ethfs-uploader --default --address <domain> --file <fileName> --privateKey <private-key> --RPC <rpc-url>
+    npx ethfs-uploader --default --address <name> --file <fileName> --privateKey <private-key> --RPC <rpc-url>
 w3ns
-    npx ethfs-uploader --default --address <domain> --file <fileName> --privateKey <private-key>
+    npx ethfs-uploader --default --address <name> --file <fileName> --privateKey <private-key>
 ```
 ##### Example
 ```
