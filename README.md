@@ -61,7 +61,7 @@ galileo
 
 
 ### Create FlatDirectory Command
-FlatDirectory is created by default on the Galileo network. You can specify to create a network by setting "chainId". If it is Ethereum or an unsupported network, RPC needs to be set.
+Galileo is the default network if it's not specified, otherwise, you should use "--chainId" to set it. RPC should also be specified if the network is Ethereum mainnet or an unlisted network.
 ```
 npx ethfs-uploader --create --privateKey <private-key>
 npx ethfs-uploader --create --privateKey <private-key> --chainId <chainId>
@@ -80,22 +80,23 @@ npx ethfs-uploader --create --privateKey 0x32... --chainId 1 --RPC https://rpc.a
 
 
 ### Deploy Command
+The domain name should be pointed to the FlatDirectory address in advance. Click [here](https://docs.web3url.io/advanced-topics/bind-ens-name-to-a-chain-specific-address) for details.
 ```
 ens
     npx ethfs-uploader <directory|file> <domain> --privateKey <private-key> --RPC <rpc-url>
 w3ns
     npx ethfs-uploader <directory|file> <domain> --privateKey <private-key>
-other networks
+FlatDirectory address
     npx ethfs-uploader <directory|file> <address> --privateKey <private-key>
     npx ethfs-uploader <directory|file> <address> --privateKey <private-key> --RPC <rpc-url>
 ```
 ##### Example
 ```
 ens
-    npx ethfs-uploader dir eth:ens.eth --privateKey 0x32... --PRC https://rpc.ankr.com/eth
+    npx ethfs-uploader dist eth:ens.eth --privateKey 0x32... --PRC https://rpc.ankr.com/eth
 w3ns
-    npx ethfs-uploader index.html w3q-g:0x1825...2388 --privateKey 0x32...
-other networks
+    npx ethfs-uploader dist w3q-g:home.w3q --privateKey 0x32...
+FlatDirectory address
     npx ethfs-uploader index.html gor:0x1825...2388 --privateKey 0x32...
     npx ethfs-uploader index.html xxx:0x1825...2388 --privateKey 0x32... --RPC https://rpc.xxx
 ```
@@ -108,17 +109,17 @@ ens
     npx ethfs-uploader --default --address <domain> --file <fileName> --privateKey <private-key> --RPC <rpc-url>
 w3ns
     npx ethfs-uploader --default --address <domain> --file <fileName> --privateKey <private-key>
-other networks
+FlatDirectory address
     npx ethfs-uploader --default --address <address> --file <fileName> --privateKey <private-key>
     npx ethfs-uploader --default --address <address> --file <fileName> --privateKey <private-key> --RPC <rpc-url>
 ```
 ##### Example
 ```
 ens
-    npx ethfs-uploader --default --address eth:home.eth --file index.html --privateKey 0x32... --RPC https://rpc.ankr.com/eth
+    npx ethfs-uploader --default --address eth:ens.eth --file index.html --privateKey 0x32... --RPC https://rpc.ankr.com/eth
 w3ns
     npx ethfs-uploader --default --address w3q-g:home.w3q --file index.html --privateKey 0x32...
-other networks
+FlatDirectory address
     npx ethfs-uploader --default --address gor:0x1825...2388 --file index.html --privateKey 0x32...
     npx ethfs-uploader --default --address xxx:0x1825...2388 --file index.html --privateKey 0x32... --RPC https://rpc.xxx
 ```
