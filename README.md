@@ -80,50 +80,51 @@ npx ethfs-uploader --create --privateKey 0x32... --chainId 1 --RPC https://rpc.a
 
 
 ### Deploy Command
-The domain name should be pointed to the FlatDirectory address in advance. Click [here](https://docs.web3url.io/advanced-topics/bind-ens-name-to-a-chain-specific-address) for details.
+If you want to use name instead of FlatDirectory address, the name should be pointed to the FlatDirectory address in advance. Click [here](https://docs.web3url.io/advanced-topics/bind-ens-name-to-a-chain-specific-address) for details.
 ```
+FlatDirectory address
+    npx ethfs-uploader <directory|file> <address> --privateKey <private-key>
+    npx ethfs-uploader <directory|file> <address> --privateKey <private-key> --RPC <rpc-url>
 ens
     npx ethfs-uploader <directory|file> <domain> --privateKey <private-key> --RPC <rpc-url>
 w3ns
     npx ethfs-uploader <directory|file> <domain> --privateKey <private-key>
-FlatDirectory address
-    npx ethfs-uploader <directory|file> <address> --privateKey <private-key>
-    npx ethfs-uploader <directory|file> <address> --privateKey <private-key> --RPC <rpc-url>
 ```
 ##### Example
 ```
+FlatDirectory address
+    npx ethfs-uploader index.html gor:0x1825...2388 --privateKey 0x32...
+    npx ethfs-uploader index.html xxx:0x1825...2388 --privateKey 0x32... --RPC https://rpc.xxx
 ens
     npx ethfs-uploader dist eth:ens.eth --privateKey 0x32... --PRC https://rpc.ankr.com/eth
 w3ns
     npx ethfs-uploader dist w3q-g:home.w3q --privateKey 0x32...
-FlatDirectory address
-    npx ethfs-uploader index.html gor:0x1825...2388 --privateKey 0x32...
-    npx ethfs-uploader index.html xxx:0x1825...2388 --privateKey 0x32... --RPC https://rpc.xxx
 ```
 <br/>
 
 
 ### Set FlatDirectory Default Entrance
 ```
+FlatDirectory address
+    npx ethfs-uploader --default --address <address> --file <fileName> --privateKey <private-key>
+    npx ethfs-uploader --default --address <address> --file <fileName> --privateKey <private-key> --RPC <rpc-url>
 ens
     npx ethfs-uploader --default --address <domain> --file <fileName> --privateKey <private-key> --RPC <rpc-url>
 w3ns
     npx ethfs-uploader --default --address <domain> --file <fileName> --privateKey <private-key>
-FlatDirectory address
-    npx ethfs-uploader --default --address <address> --file <fileName> --privateKey <private-key>
-    npx ethfs-uploader --default --address <address> --file <fileName> --privateKey <private-key> --RPC <rpc-url>
 ```
 ##### Example
 ```
+FlatDirectory address
+    npx ethfs-uploader --default --address gor:0x1825...2388 --file index.html --privateKey 0x32...
+    npx ethfs-uploader --default --address xxx:0x1825...2388 --file index.html --privateKey 0x32... --RPC https://rpc.xxx
 ens
     npx ethfs-uploader --default --address eth:ens.eth --file index.html --privateKey 0x32... --RPC https://rpc.ankr.com/eth
 w3ns
     npx ethfs-uploader --default --address w3q-g:home.w3q --file index.html --privateKey 0x32...
-FlatDirectory address
-    npx ethfs-uploader --default --address gor:0x1825...2388 --file index.html --privateKey 0x32...
-    npx ethfs-uploader --default --address xxx:0x1825...2388 --file index.html --privateKey 0x32... --RPC https://rpc.xxx
 ```
 <br/>
+
 
 ### Repo
 [Github Repo](https://github.com/QuarkChain/ethfs-uploader)
