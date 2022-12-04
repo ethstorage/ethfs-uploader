@@ -285,7 +285,7 @@ const recursiveFiles = (path, basePath) => {
   let filePools = [];
   const fileStat = fs.statSync(path);
   if (fileStat.isFile()) {
-    filePools.push({path: path, name: path, size: fileStat.size});
+    filePools.push({path: path, name: path.substring(path.lastIndexOf("/") + 1), size: fileStat.size});
     return filePools;
   }
 
