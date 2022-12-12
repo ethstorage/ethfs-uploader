@@ -206,6 +206,7 @@ async function getWebHandler(domain, RPC) {
     console.error(error(`ERROR: The network need RPC, please try again after setting RPC!`));
     return;
   }
+  console.log(`providerUrl = ${providerUrl}\nchainId = ${chainId}\naddress: ${address}\n`);
 
   // address
   const ethAddrReg = /^0x[0-9a-fA-F]{40}$/;
@@ -416,6 +417,26 @@ const uploadFile = async (chainId, fileContract, fileInfo) => {
   };
 };
 
+const removeFile = async (fileContract, fileName, hexName) => {
+  const option = {nonce: getNonce()};
+  let tx;
+  try {
+    tx = await fileContract.remove(hexName, option);
+  } catch (e) {
+    await sleep(3000);
+    tx = await fileContract.remove(hexName, option);
+  }
+  console.log(`Remove Transaction Id: ${tx.hash}`);
+  const receipt = await getTxReceipt(fileContract, tx.hash);
+  if (receipt.status) {
+    console.log(`Remove file: ${fileName} succeeded`);
+    return REMOVE_SUCCESS;
+  } else {
+    console.log(`Failed to remove file: ${fileName}`);
+    return REMOVE_FAIL;
+  }
+}
+
 const clearOldFile = async (fileContract, fileName, hexName, chunkLength) => {
   let oldChunkLength;
   try {
@@ -427,28 +448,41 @@ const clearOldFile = async (fileContract, fileName, hexName, chunkLength) => {
 
   if (oldChunkLength > chunkLength) {
     // remove
-    const option = {nonce: getNonce()};
-    let tx;
-    try {
-      tx = await fileContract.remove(hexName, option);
-    } catch (e) {
-      await sleep(3000);
-      tx = await fileContract.remove(hexName, option);
-    }
-    console.log(`Remove Transaction Id: ${tx.hash}`);
-    const receipt = await getTxReceipt(fileContract, tx.hash);
-    if (receipt.status) {
-      console.log(`Remove file: ${fileName}`);
-      return REMOVE_SUCCESS;
-    } else {
-      return REMOVE_FAIL;
-    }
+    return removeFile(fileContract, fileName, hexName);
   }
   return REMOVE_NORMAL;
 }
 // **** utils ****
+const checkBalance = async (provider, domainAddr, accountAddr) => {
+  return Promise.all([provider.getBalance(domainAddr), provider.getBalance(accountAddr)]).then(values => {
+    return {
+      domainBalance: values[0],
+      accountBalance: values[1]
+    };
+  }, reason => {
+    console.log(reason);
+  });
+}
 
 // **** function ****
+const remove = async (fileName, domain, key, RPC) => {
+  const {providerUrl, chainId, address} = await getWebHandler(domain, RPC);
+  if (providerUrl && parseInt(address) > 0) {
+    const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+    const wallet = new ethers.Wallet(key, provider);
+    const fileContract = new ethers.Contract(address, fileAbi, wallet);
+    let prevInfo;
+    await checkBalance(provider, address, wallet.address).then(info => { prevInfo = info; })
+    nonce = await wallet.getTransactionCount("pending");
+    console.log(`Removing file ${fileName}`);
+    const hexName = '0x' + Buffer.from(fileName, 'utf8').toString('hex');
+    await removeFile(fileContract, fileName, hexName);
+    await checkBalance(provider, address, wallet.address).then(info => {
+      console.log(`domainBalance: ${info.domainBalance}, accountBalance: ${info.accountBalance}, balanceChange: ${prevInfo.accountBalance - info.accountBalance}`);
+    })
+  }
+}
+
 const deploy = async (path, domain, key, RPC) => {
   const {providerUrl, chainId, address} = await getWebHandler(domain, RPC);
   if (providerUrl && parseInt(address) > 0) {
@@ -461,7 +495,7 @@ const deploy = async (path, domain, key, RPC) => {
     let failPool = [];
     let totalCost = 0, totalFileCount = 0, totalFileSize = 0;
     // get file and remove old chunk
-    console.log("Stark upload File.......");
+    console.log("Start upload File.......");
     from(recursiveFiles(path, ''))
         .pipe(mergeMap(info => uploadFile(chainId, fileContract, info), 15))
         // .returnValue()
@@ -601,4 +635,5 @@ const setDefault = async (domain, filename, key, RPC) => {
 module.exports.deploy = deploy;
 module.exports.create = createDirectory;
 module.exports.refund = refund;
+module.exports.remove = remove;
 module.exports.setDefault = setDefault;
