@@ -570,11 +570,16 @@ const createDirectory = async (key, chainId, RPC) => {
     const provider = new ethers.providers.JsonRpcProvider(providerUrl);
     const wallet = new ethers.Wallet(key, provider);
     const factory = new ContractFactory(flatDirectoryAbi, contractByteCode, wallet);
-    const contract = await factory.deploy(0);
+    const contract = await factory.deploy(0, {
+      gasLimit: 3000000
+    });
     await contract.deployed();
     if (contract) {
       console.log(`FlatDirectory Address: ${contract.address}`);
-      const tx = await contract.changeOwner(wallet.address);
+      const estimatedGas = await contract.estimateGas.changeOwner(wallet.address);
+      const tx = await contract.changeOwner(wallet.address, {
+        gasLimit: estimatedGas.mul(6).div(5).toString()
+      });
       await tx.wait();
       console.log(`Change Owner: ${contract.address}`);
     } else {
