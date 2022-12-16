@@ -418,7 +418,11 @@ const uploadFile = async (chainId, fileContract, fileInfo) => {
 };
 
 const removeFile = async (fileContract, fileName, hexName) => {
-  const option = {nonce: getNonce()};
+  const estimatedGas = await fileContract.estimateGas.remove(hexName);
+  const option = {
+    nonce: getNonce(),
+    gasLimit: estimatedGas.mul(6).div(5).toString()
+  };
   let tx;
   try {
     tx = await fileContract.remove(hexName, option);
@@ -465,20 +469,23 @@ const checkBalance = async (provider, domainAddr, accountAddr) => {
 }
 
 // **** function ****
-const remove = async (fileName, domain, key, RPC) => {
+const remove = async (domain, fileName, key, RPC) => {
   const {providerUrl, chainId, address} = await getWebHandler(domain, RPC);
   if (providerUrl && parseInt(address) > 0) {
     const provider = new ethers.providers.JsonRpcProvider(providerUrl);
     const wallet = new ethers.Wallet(key, provider);
     const fileContract = new ethers.Contract(address, fileAbi, wallet);
     let prevInfo;
-    await checkBalance(provider, address, wallet.address).then(info => { prevInfo = info; })
+    await checkBalance(provider, address, wallet.address).then(info => {
+      prevInfo = info;
+    })
     nonce = await wallet.getTransactionCount("pending");
     console.log(`Removing file ${fileName}`);
     const hexName = '0x' + Buffer.from(fileName, 'utf8').toString('hex');
     await removeFile(fileContract, fileName, hexName);
     await checkBalance(provider, address, wallet.address).then(info => {
-      console.log(`domainBalance: ${info.domainBalance}, accountBalance: ${info.accountBalance}, balanceChange: ${prevInfo.accountBalance - info.accountBalance}`);
+      console.log(`domainBalance: ${info.domainBalance}, accountBalance: ${info.accountBalance}, 
+        balanceChange: ${prevInfo.accountBalance - info.accountBalance}`);
     })
   }
 }
@@ -594,7 +601,10 @@ const refund = async (domain, key, RPC) => {
     const provider = new ethers.providers.JsonRpcProvider(providerUrl);
     const wallet = new ethers.Wallet(key, provider);
     const fileContract = new ethers.Contract(address, fileAbi, wallet);
-    const tx = await fileContract.refund();
+    const estimatedGas = await fileContract.estimateGas.refund();
+    const tx = await fileContract.refund({
+      gasLimit: estimatedGas.mul(6).div(5).toString()
+    });
     console.log(`Transaction: ${tx.hash}`);
     let txReceipt;
     while (!txReceipt) {
@@ -619,7 +629,10 @@ const setDefault = async (domain, filename, key, RPC) => {
 
     const fileContract = new ethers.Contract(address, fileAbi, wallet);
     const defaultFile = '0x' + Buffer.from(filename, 'utf8').toString('hex');
-    const tx = await fileContract.setDefault(defaultFile);
+    const estimatedGas = await fileContract.estimateGas.setDefault(defaultFile);
+    const tx = await fileContract.setDefault(defaultFile, {
+      gasLimit: estimatedGas.mul(6).div(5).toString()
+    });
     console.log(`Transaction: ${tx.hash}`);
     let txReceipt;
     while (!txReceipt) {

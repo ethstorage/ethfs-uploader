@@ -2,7 +2,7 @@
 const args = require('minimist')(
   process.argv.slice(2),
   {
-    string: ['_', 'address', 'privateKey', 'RPC', 'chainId', 'fileName']
+    string: ['_', 'address', 'privateKey', 'RPC', 'chainId', 'file']
   }
 );
 
@@ -13,8 +13,8 @@ if (args.create) {
   refund(args.address, args.privateKey, args.RPC);
 } else if(args.default) {
   setDefault(args.address, args.file, args.privateKey, args.RPC);
-} else if (args.fileName) {
-  remove(args.fileName, args.address, args.privateKey, args.RPC)
+} else if (args.remove) {
+  remove(args.address, args.file, args.privateKey, args.RPC)
 } else {
   if (args.privateKey) {
     deploy(args._[0], args._[1], args.privateKey, args.RPC);
