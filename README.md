@@ -126,5 +126,28 @@ w3ns
 <br/>
 
 
+
+### Remove File
+```
+FlatDirectory address
+    npx ethfs-uploader --remove --address <address> --file <fileName> --privateKey <private-key>
+    npx ethfs-uploader --remove --address <address> --file <fileName> --privateKey <private-key> --RPC <rpc-url>
+ens
+    npx ethfs-uploader --remove --address <name> --file <fileName> --privateKey <private-key> --RPC <rpc-url>
+w3ns
+    npx ethfs-uploader --remove --address <name> --file <fileName> --privateKey <private-key>
+```
+##### Example
+```
+FlatDirectory address
+    npx ethfs-uploader --remove --address gor:0x1825...2388 --file index.html --privateKey 0x32...
+    npx ethfs-uploader --remove --address xxx:0x1825...2388 --file index.html --privateKey 0x32... --RPC https://rpc.xxx
+ens
+    npx ethfs-uploader --remove --address eth:ens.eth --file src/home.vue --privateKey 0x32... --RPC https://rpc.ankr.com/eth
+w3ns
+    npx ethfs-uploader --remove --address w3q-g:home.w3q --file src/home.vue --privateKey 0x32...
+```
+<br/>
+
 ### Repo
 [Github Repo](https://github.com/QuarkChain/ethfs-uploader)
