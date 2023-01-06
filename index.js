@@ -493,6 +493,10 @@ const remove = async (domain, fileName, key, RPC) => {
 const deploy = async (path, domain, key, RPC) => {
   const {providerUrl, chainId, address} = await getWebHandler(domain, RPC);
   if (providerUrl && parseInt(address) > 0) {
+    let syncPoolSize = 15;
+    if (chainId === ARBITRUM_NOVE_CHAIN_ID) {
+      syncPoolSize = 4;
+    }
     const provider = new ethers.providers.JsonRpcProvider(providerUrl);
     const wallet = new ethers.Wallet(key, provider);
 
@@ -504,7 +508,7 @@ const deploy = async (path, domain, key, RPC) => {
     // get file and remove old chunk
     console.log("Start upload File.......");
     from(recursiveFiles(path, ''))
-        .pipe(mergeMap(info => uploadFile(chainId, fileContract, info), 15))
+        .pipe(mergeMap(info => uploadFile(chainId, fileContract, info), syncPoolSize))
         // .returnValue()
         .subscribe(
             (info) => {
