@@ -323,8 +323,8 @@ const uploadFile = async (chainId, fileContract, fileInfo) => {
     }
   } else {
     // Data need to be sliced if file > 24K
-    if (fileSize > 24 * 1024) {
-      const chunkSize = Math.ceil(fileSize / (24 * 1024));
+    if (fileSize > 24 * 1024 - 326) {
+      const chunkSize = Math.ceil(fileSize / (24 * 1024 - 326));
       chunks = bufferChunk(content, chunkSize);
       fileSize = fileSize / chunkSize;
     } else {
