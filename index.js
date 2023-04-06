@@ -230,7 +230,7 @@ async function getWebHandler(domain, RPC) {
     if (chainId === GALILEO_CHAIN_ID) {
       webHandler = await resolverContract.webHandler(nameHash);
     } else {
-      webHandler = await resolverContract.text(nameHash, "web3");
+      webHandler = await resolverContract.text(nameHash, "contentcontract");
     }
   } catch (e){}
   // address
