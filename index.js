@@ -5,6 +5,7 @@ const sha3 = require('js-sha3').keccak_256;
 const { from, mergeMap } = require('rxjs');
 
 const color = require('colors-cli/safe')
+const {Uploader} = require("./upload/Uploader");
 const error = color.red.bold;
 const notice = color.blue;
 
@@ -85,6 +86,7 @@ const POLYGON_MUMBAI_CHAIN_ID = 80001;
 const POLYGON_ZKEVM_TEST_CHAIN_ID = 1402;
 const QUARKCHAIN_CHAIN_ID = 100001;
 const QUARKCHAIN_DEVNET_CHAIN_ID = 110001;
+const DEVNET_4844_CHAIN_ID = 4844001005;
 
 const NETWORK_MAPING = {
   [SHORT_NAME_GALILEO]: GALILEO_CHAIN_ID,
@@ -113,6 +115,9 @@ const NETWORK_MAPING = {
   [SHORT_NAME_QUARKCHAIN_DEVNET]: QUARKCHAIN_DEVNET_CHAIN_ID,
 }
 
+const Support4844Chain = {
+  [DEVNET_4844_CHAIN_ID]: true,
+};
 const PROVIDER_URLS = {
   [GALILEO_CHAIN_ID]: 'https://galileo.web3q.io:8545',
   [GOERLI_CHAIN_ID]: 'https://rpc.ankr.com/eth_goerli',
@@ -137,6 +142,7 @@ const PROVIDER_URLS = {
   [POLYGON_ZKEVM_TEST_CHAIN_ID]: 'https://rpc.public.zkevm-test.net',
   [QUARKCHAIN_CHAIN_ID]: 'https://mainnet-s0-ethapi.quarkchain.io',
   [QUARKCHAIN_DEVNET_CHAIN_ID]: 'https://devnet-s0-ethapi.quarkchain.io',
+  [DEVNET_4844_CHAIN_ID]: 'https://rpc.4844-devnet-5.ethpandaops.io',
 }
 const NS_ADDRESS = {
   [GALILEO_CHAIN_ID]: '0xD379B91ac6a93AF106802EB076d16A54E3519CED',
@@ -270,18 +276,6 @@ const sleep = (ms) => {
   });
 }
 
-const bufferChunk = (buffer, chunkSize) => {
-  let i = 0;
-  let result = [];
-  const len = buffer.length;
-  const chunkLength = Math.ceil(len / chunkSize);
-  while (i < len) {
-    result.push(buffer.slice(i, i += chunkLength));
-  }
-
-  return result;
-}
-
 const recursiveFiles = (path, basePath) => {
   let filePools = [];
   const fileStat = fs.statSync(path);
@@ -301,120 +295,6 @@ const recursiveFiles = (path, basePath) => {
     }
   }
   return filePools;
-};
-
-const uploadFile = async (chainId, fileContract, fileInfo) => {
-  const {path, name, size} = fileInfo;
-  const filePath = path;
-  const fileName = name;
-  let fileSize = size;
-
-  const hexName = '0x' + Buffer.from(fileName, 'utf8').toString('hex');
-  const content = fs.readFileSync(filePath);
-  let chunks = [];
-  if (chainId === GALILEO_CHAIN_ID) {
-    // Data need to be sliced if file > 475K
-    if (fileSize > 475 * 1024) {
-      const chunkSize = Math.ceil(fileSize / (475 * 1024));
-      chunks = bufferChunk(content, chunkSize);
-      fileSize = fileSize / chunkSize;
-    } else {
-      chunks.push(content);
-    }
-  } else {
-    // Data need to be sliced if file > 24K
-    if (fileSize > 24 * 1024 - 326) {
-      const chunkSize = Math.ceil(fileSize / (24 * 1024 - 326));
-      chunks = bufferChunk(content, chunkSize);
-      fileSize = fileSize / chunkSize;
-    } else {
-      chunks.push(content);
-    }
-  }
-
-  const clearState = await clearOldFile(fileContract, fileName, hexName, chunks.length);
-  if (clearState === REMOVE_FAIL) {
-    return {upload: 0, fileName: fileName};
-  }
-
-  let cost = 0;
-  if ((chainId === GALILEO_CHAIN_ID) && (fileSize > 24 * 1024 - 326)) {
-    // eth storage need stake
-    cost = Math.floor((fileSize + 326) / 1024 / 24);
-  }
-
-  let uploadCount = 0;
-  const failFile = [];
-  for (const index in chunks) {
-    const chunk = chunks[index];
-    const hexData = '0x' + chunk.toString('hex');
-
-    if (clearState === REMOVE_NORMAL) {
-      // check is change
-      const localHash = '0x' + sha3(chunk);
-      let hash;
-      try {
-        hash = await fileContract.getChunkHash(hexName, index);
-      } catch (e) {
-        await sleep(3000);
-        hash = await fileContract.getChunkHash(hexName, index);
-      }
-      if (localHash === hash) {
-        console.log(`File ${fileName} chunkId: ${index}: The data is not changed.`);
-        continue;
-      }
-    }
-
-    let estimatedGas;
-    try {
-      estimatedGas = await fileContract.estimateGas.writeChunk(hexName, index, hexData, {
-        value: ethers.utils.parseEther(cost.toString())
-      });
-    } catch (e) {
-      await sleep(3000);
-      estimatedGas = await fileContract.estimateGas.writeChunk(hexName, index, hexData, {
-        value: ethers.utils.parseEther(cost.toString())
-      });
-    }
-
-    // upload file
-    const option = {
-      nonce: getNonce(),
-      gasLimit: estimatedGas.mul(6).div(5).toString(),
-      value: ethers.utils.parseEther(cost.toString())
-    };
-    let tx;
-    try {
-      tx = await fileContract.writeChunk(hexName, index, hexData, option);
-    } catch (e) {
-      await sleep(5000);
-      tx = await fileContract.writeChunk(hexName, index, hexData, option);
-    }
-    console.log(`${fileName}, chunkId: ${index}`);
-    console.log(`Transaction Id: ${tx.hash}`);
-
-    // get result
-    let txReceipt;
-    try {
-      txReceipt = await getTxReceipt(fileContract, tx.hash);
-    } catch (e) {}
-    if (txReceipt && txReceipt.status) {
-      console.log(`File ${fileName} chunkId: ${index} uploaded!`);
-      uploadCount++;
-    } else {
-      failFile.push(index);
-      break;
-    }
-  }
-
-  return {
-    upload: 1,
-    fileName: fileName,
-    cost: cost,
-    fileSize: fileSize / 1024,
-    uploadCount: uploadCount,
-    failFile: failFile
-  };
 };
 
 const removeFile = async (fileContract, fileName, hexName) => {
@@ -441,21 +321,6 @@ const removeFile = async (fileContract, fileName, hexName) => {
   }
 }
 
-const clearOldFile = async (fileContract, fileName, hexName, chunkLength) => {
-  let oldChunkLength;
-  try {
-    oldChunkLength = await fileContract.countChunks(hexName);
-  } catch (e) {
-    await sleep(3000);
-    oldChunkLength = await fileContract.countChunks(hexName);
-  }
-
-  if (oldChunkLength > chunkLength) {
-    // remove
-    return removeFile(fileContract, fileName, hexName);
-  }
-  return REMOVE_NORMAL;
-}
 // **** utils ****
 const checkBalance = async (provider, domainAddr, accountAddr) => {
   return Promise.all([provider.getBalance(domainAddr), provider.getBalance(accountAddr)]).then(values => {
@@ -497,18 +362,16 @@ const deploy = async (path, domain, key, RPC) => {
     if (chainId === ARBITRUM_NOVE_CHAIN_ID) {
       syncPoolSize = 4;
     }
-    const provider = new ethers.providers.JsonRpcProvider(providerUrl);
-    const wallet = new ethers.Wallet(key, provider);
 
-    const fileContract = new ethers.Contract(address, fileAbi, wallet);
-    nonce = await wallet.getTransactionCount("pending");
+    const isSupport4844 = Support4844Chain[chainId];
+    const uploader  = new Uploader(key, providerUrl, chainId, address, isSupport4844);
 
     let failPool = [];
     let totalCost = 0, totalFileCount = 0, totalFileSize = 0;
     // get file and remove old chunk
     console.log("Start upload File.......");
     from(recursiveFiles(path, ''))
-        .pipe(mergeMap(info => uploadFile(chainId, fileContract, info), syncPoolSize))
+        .pipe(mergeMap(info => uploader.uploadFile(info), syncPoolSize))
         // .returnValue()
         .subscribe(
             (info) => {
