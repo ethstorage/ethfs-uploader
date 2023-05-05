@@ -4,10 +4,11 @@ const execWithPromise = async command => {
     return new Promise(async (resolve, reject) => {
         childProcess.exec(command, (error, stdout, stderr) => {
             if (error) {
-                reject(err);
-                process.exit(1);
+                reject(error);
             }
-            resolve(stderr)
+            const index = stderr.indexOf('hash=');
+            const hash = stderr.substring(index + 5, stderr.length);
+            resolve(hash);
         });
     });
 };
@@ -17,13 +18,9 @@ const upload = async (chainId, rpc, privateKey, tx) => {
     const RPC = rpc;
     const PrivateKey = privateKey;
 
-    const {Nonce, To, Value, Data, CallData, GasLimit, PriorityGas, MaxFeePer} = tx;
-    // calldata
-    // nonce
-    // value
-    const cmd = `./blob-utils tx --chain-id ${ChainId} --rpc-url ${RPC} --blob-file ${Data} -to ${To} --private-key ${PrivateKey} --gas-limit ${GasLimit} --max-fee-per-data-gas ${MaxFeePer} --priority-gas-price ${PriorityGas}`;
-    const result = await execWithPromise(cmd);
-    console.log(result);
+    const {Nonce, To, Value, File, CallData, GasLimit, PriorityGas, MaxFeePer} = tx;
+    const cmd = `./upload/blob-utils tx --chain-id ${ChainId} --rpc-url ${RPC} --private-key ${PrivateKey} --blob-file ${File} --nonce ${Nonce} -to ${To} --value ${Value} --calldata ${CallData} --gas-limit ${GasLimit} --max-fee-per-data-gas ${MaxFeePer} --priority-gas-price ${PriorityGas}`;
+    return await execWithPromise(cmd);
 }
 
 module.exports = { upload }

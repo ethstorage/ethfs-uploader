@@ -1,4 +1,5 @@
 const fs = require('fs');
+const os = require('os');
 const sha3 = require('js-sha3').keccak_256;
 const {ethers} = require("ethers");
 const {upload} = require('./4844-utils');
@@ -52,6 +53,13 @@ const getTxReceipt = async (fileContract, transactionHash) => {
     return txReceipt;
 }
 
+const saveFile = (data) => {
+    const exp = new Date();
+    const path = `${os.tmpdir()}/${exp.getTime()}`;
+    fs.writeFileSync(path, data);
+    return path;
+}
+
 class Uploader {
     #privateKey;
     #providerUrl;
@@ -95,13 +103,14 @@ class Uploader {
         const fileName = name;
         let fileSize = size;
 
+        const iFace = new ethers.utils.Interface(fileAbi);
         const hexName = '0x' + Buffer.from(fileName, 'utf8').toString('hex');
 
         const content = fs.readFileSync(filePath);
         let chunks = [];
         // Data need to be sliced if file > 128K * 2， 1 blob = 128kb
         if (fileSize > 2 * 128 * 1024) {
-            const chunkSize = Math.ceil(fileSize / (24 * 1024 - 326));
+            const chunkSize = Math.ceil(fileSize / (2 * 128 * 1024));
             chunks = bufferChunk(content, chunkSize);
             fileSize = fileSize / chunkSize;
         } else {
@@ -112,8 +121,7 @@ class Uploader {
         const failFile = [];
         for (const index in chunks) {
             const chunk = chunks[index];
-            const stringData = chunk.toString();
-
+            // TODO
             // if (clearState === REMOVE_NORMAL) {
             //     // check is change
             //     const localHash = '0x' + sha3(chunk);
@@ -130,34 +138,34 @@ class Uploader {
             //     }
             // }
 
+            const file = saveFile(chunk);
+
             let estimatedGas;
             try {
-                estimatedGas = await this.#fileContract.estimateGas.writeChunk(hexName, index);
+                estimatedGas = await this.#fileContract.estimateGas.writeChunk(hexName, index, '0x');
             } catch (e) {
                 await sleep(3000);
-                estimatedGas = await this.#fileContract.estimateGas.writeChunk(hexName, index);
+                estimatedGas = await this.#fileContract.estimateGas.writeChunk(hexName, index, '0x');
             }
-
-            const callData = "";
+            const callData = iFace.encodeFunctionData("writeChunk", [hexName, index, '0x']);
 
             // upload file
             const option = {
                 Nonce: this.getNonce(),
-                gasLimit: estimatedGas.mul(6).div(5).toString(),
                 To: this.#contractAddress,
                 Value: '0x0',
-                Data: stringData,
+                File: file,
                 CallData: callData,
-                GasLimit: estimatedGas,
+                GasLimit: estimatedGas.mul(6).div(5).toString(),
                 PriorityGas: 200000000,
                 MaxFeePer: 300000000
             };
-            let tx = upload(this.#chainId, this.#providerUrl, this.#privateKey, option);
+            let hash = await upload(this.#chainId, this.#providerUrl, this.#privateKey, option);
             console.log(`${fileName}, chunkId: ${index}`);
-            console.log(`Transaction Id: ${tx.hash}`);
+            console.log(`Transaction Id: ${hash}`);
 
             // get result
-            const txReceipt = await getTxReceipt(this.#fileContract, tx.hash);
+            const txReceipt = await getTxReceipt(this.#fileContract, hash);
             if (txReceipt && txReceipt.status) {
                 console.log(`File ${fileName} chunkId: ${index} uploaded!`);
                 uploadCount++;
