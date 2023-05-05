@@ -5,7 +5,7 @@ const sha3 = require('js-sha3').keccak_256;
 const { from, mergeMap } = require('rxjs');
 
 const color = require('colors-cli/safe')
-const {Uploader} = require("./upload/Uploader");
+const Uploader = require("./upload/Uploader");
 const error = color.red.bold;
 const notice = color.blue;
 
@@ -365,6 +365,7 @@ const deploy = async (path, domain, key, RPC) => {
 
     const isSupport4844 = Support4844Chain[chainId];
     const uploader  = new Uploader(key, providerUrl, chainId, address, isSupport4844);
+    await uploader.init();
 
     let failPool = [];
     let totalCost = 0, totalFileCount = 0, totalFileSize = 0;
@@ -372,7 +373,6 @@ const deploy = async (path, domain, key, RPC) => {
     console.log("Start upload File.......");
     from(recursiveFiles(path, ''))
         .pipe(mergeMap(info => uploader.uploadFile(info), syncPoolSize))
-        // .returnValue()
         .subscribe(
             (info) => {
               if (info.upload === 1) {
@@ -420,11 +420,7 @@ const createDirectory = async (key, chainId, RPC) => {
     const factoryContract = new ethers.Contract(factoryAddress, factoryAbi, wallet);
     const tx = await factoryContract.create();
     console.log(`Transaction: ${tx.hash}`);
-    let txReceipt;
-    while (!txReceipt) {
-      txReceipt = await isTransactionMined(provider, tx.hash);
-      await sleep(5000);
-    }
+    const txReceipt = await getTxReceipt(factoryContract, tx.hash);
     if (txReceipt.status) {
       let iface = new ethers.utils.Interface(factoryAbi);
       let log = iface.parseLog(txReceipt.logs[0]);
@@ -450,12 +446,6 @@ const createDirectory = async (key, chainId, RPC) => {
     await contract.deployed();
     if (contract) {
       console.log(`FlatDirectory Address: ${contract.address}`);
-      const estimatedGas = await contract.estimateGas.changeOwner(wallet.address);
-      const tx = await contract.changeOwner(wallet.address, {
-        gasLimit: estimatedGas.mul(6).div(5).toString()
-      });
-      await tx.wait();
-      console.log(`Change Owner: ${contract.address}`);
     } else {
       console.error(`ERROR: transaction failed!`);
     }

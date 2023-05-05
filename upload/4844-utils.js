@@ -12,7 +12,7 @@ const execWithPromise = async command => {
     });
 };
 
-export const upload = async (chainId, rpc, privateKey, tx) => {
+const upload = async (chainId, rpc, privateKey, tx) => {
     const ChainId = chainId;
     const RPC = rpc;
     const PrivateKey = privateKey;
@@ -25,3 +25,5 @@ export const upload = async (chainId, rpc, privateKey, tx) => {
     const result = await execWithPromise(cmd);
     console.log(result);
 }
+
+module.exports = { upload }

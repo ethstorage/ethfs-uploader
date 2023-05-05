@@ -52,7 +52,7 @@ const getTxReceipt = async (fileContract, transactionHash) => {
     return txReceipt;
 }
 
-export class Uploader {
+class Uploader {
     #privateKey;
     #providerUrl;
     #chainId;
@@ -327,3 +327,5 @@ export class Uploader {
         }
     }
 }
+
+module.exports = Uploader
