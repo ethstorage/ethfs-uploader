@@ -7,7 +7,7 @@ const execWithPromise = async command => {
                 reject(error);
             }
             const index = stderr.indexOf('hash=');
-            const hash = stderr.substring(index + 5, stderr.length);
+            const hash = stderr.substring(index + 5, stderr.length - 1);
             resolve(hash);
         });
     });
@@ -18,8 +18,8 @@ const upload = async (chainId, rpc, privateKey, tx) => {
     const RPC = rpc;
     const PrivateKey = privateKey;
 
-    const {Nonce, To, Value, File, CallData, GasLimit, PriorityGas, MaxFeePer} = tx;
-    const cmd = `./upload/blob-utils tx --chain-id ${ChainId} --rpc-url ${RPC} --private-key ${PrivateKey} --blob-file ${File} --nonce ${Nonce} -to ${To} --value ${Value} --calldata ${CallData} --gas-limit ${GasLimit} --max-fee-per-data-gas ${MaxFeePer} --priority-gas-price ${PriorityGas}`;
+    const {Nonce, To, Value, File, CallData, GasLimit, MaxFeeGas, PriorityGas, MaxFeeDataPer} = tx;
+    const cmd = `./upload/blob-utils tx --chain-id ${ChainId} --rpc-url ${RPC} --private-key ${PrivateKey} --blob-file ${File} --nonce ${Nonce} -to ${To} --value ${Value} --calldata ${CallData} --gas-limit ${GasLimit} --gas-price ${MaxFeeGas} --priority-gas-price ${PriorityGas} --max-fee-per-data-gas ${MaxFeeDataPer}`;
     return await execWithPromise(cmd);
 }
 

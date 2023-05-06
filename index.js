@@ -87,7 +87,7 @@ const POLYGON_MUMBAI_CHAIN_ID = 80001;
 const POLYGON_ZKEVM_TEST_CHAIN_ID = 1402;
 const QUARKCHAIN_CHAIN_ID = 100001;
 const QUARKCHAIN_DEVNET_CHAIN_ID = 110001;
-const DEVNET_4844_CHAIN_ID = 4844001005;
+const DEVNET_4844_CHAIN_ID = 42424243;
 
 const NETWORK_MAPING = {
   [SHORT_NAME_GALILEO]: GALILEO_CHAIN_ID,
@@ -144,7 +144,7 @@ const PROVIDER_URLS = {
   [POLYGON_ZKEVM_TEST_CHAIN_ID]: 'https://rpc.public.zkevm-test.net',
   [QUARKCHAIN_CHAIN_ID]: 'https://mainnet-s0-ethapi.quarkchain.io',
   [QUARKCHAIN_DEVNET_CHAIN_ID]: 'https://devnet-s0-ethapi.quarkchain.io',
-  [DEVNET_4844_CHAIN_ID]: 'https://rpc.4844-devnet-5.ethpandaops.io',
+  [DEVNET_4844_CHAIN_ID]: 'http://65.109.50.145:8545/',
 }
 const NS_ADDRESS = {
   [GALILEO_CHAIN_ID]: '0xD379B91ac6a93AF106802EB076d16A54E3519CED',

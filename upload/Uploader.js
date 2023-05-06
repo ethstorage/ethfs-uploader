@@ -76,6 +76,9 @@ class Uploader {
         this.#chainId = chainId;
         this.#contractAddress = contractAddress;
         this.#isSupport4844 = isSupport4844;
+        if (isSupport4844 && pk.startsWith('0x')) {
+            this.#privateKey = pk.substring(2, pk.length);
+        }
     }
 
     async init() {
@@ -139,6 +142,7 @@ class Uploader {
             // }
 
             const file = saveFile(chunk);
+            const callData = iFace.encodeFunctionData("writeChunk", [hexName, index, '0x']);
 
             let estimatedGas;
             try {
@@ -147,7 +151,7 @@ class Uploader {
                 await sleep(3000);
                 estimatedGas = await this.#fileContract.estimateGas.writeChunk(hexName, index, '0x');
             }
-            const callData = iFace.encodeFunctionData("writeChunk", [hexName, index, '0x']);
+            const {maxFeePerGas, maxPriorityFeePerGas} = await this.#fileContract.provider.getFeeData();
 
             // upload file
             const option = {
@@ -157,10 +161,11 @@ class Uploader {
                 File: file,
                 CallData: callData,
                 GasLimit: estimatedGas.mul(6).div(5).toString(),
-                PriorityGas: 200000000,
-                MaxFeePer: 300000000
+                MaxFeeGas: maxFeePerGas.toString(),
+                PriorityGas: maxPriorityFeePerGas.toString(),
+                MaxFeeDataPer: 300000000
             };
-            let hash = await upload(this.#chainId, this.#providerUrl, this.#privateKey, option);
+            const hash = await upload(this.#chainId, this.#providerUrl, this.#privateKey, option);
             console.log(`${fileName}, chunkId: ${index}`);
             console.log(`Transaction Id: ${hash}`);
 
