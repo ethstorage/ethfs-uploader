@@ -5,10 +5,8 @@ const {ethers} = require("ethers");
 const {upload} = require('./4844-utils');
 
 const fileAbi = [
-    "function write(bytes memory filename, bytes memory data) public payable",
-    "function writeChunk(bytes memory name, uint256 chunkId, bytes memory data) public payable",
-    "function files(bytes memory filename) public view returns (bytes memory)",
-    "function setDefault(bytes memory _defaultFile) public",
+    "function writeChunk(bytes memory name, uint256 chunkId, bytes32 chunkHash, bytes32[] memory blobKeys, uint256[] memory blobLengths) public payable",
+    "function upfrontPayment() external view returns (uint256)",
     "function refund() public",
     "function remove(bytes memory name) external returns (uint256)",
     "function countChunks(bytes memory name) external view returns (uint256)",
@@ -20,6 +18,8 @@ const GALILEO_CHAIN_ID = 3334;
 const REMOVE_FAIL = -1;
 const REMOVE_NORMAL = 0;
 const REMOVE_SUCCESS = 1;
+
+const BLOB_SIZE = 128 *1024;
 
 const bufferChunk = (buffer, chunkSize) => {
     let i = 0;
@@ -112,52 +112,75 @@ class Uploader {
         const content = fs.readFileSync(filePath);
         let chunks = [];
         // Data need to be sliced if file > 128K * 2， 1 blob = 128kb
-        if (fileSize > 2 * 128 * 1024) {
-            const chunkSize = Math.ceil(fileSize / (2 * 128 * 1024));
+        if (fileSize > 2 * BLOB_SIZE) {
+            const chunkSize = Math.ceil(fileSize / (2 * BLOB_SIZE));
             chunks = bufferChunk(content, chunkSize);
             fileSize = fileSize / chunkSize;
         } else {
             chunks.push(content);
         }
 
+        const clearState = await this.clearOldFile(this.#fileContract, fileName, hexName, chunks.length);
+        if (clearState === REMOVE_FAIL) {
+            return {upload: 0, fileName: fileName};
+        }
+
         let uploadCount = 0;
         const failFile = [];
         for (const index in chunks) {
             const chunk = chunks[index];
-            // TODO
-            // if (clearState === REMOVE_NORMAL) {
-            //     // check is change
-            //     const localHash = '0x' + sha3(chunk);
-            //     let hash;
-            //     try {
-            //         hash = await this.#fileContract.getChunkHash(hexName, index);
-            //     } catch (e) {
-            //         await sleep(3000);
-            //         hash = await this.#fileContract.getChunkHash(hexName, index);
-            //     }
-            //     if (localHash === hash) {
-            //         console.log(`File ${fileName} chunkId: ${index}: The data is not changed.`);
-            //         continue;
-            //     }
-            // }
+            const localHash = '0x' + sha3(chunk);
 
-            const file = saveFile(chunk);
-            const callData = iFace.encodeFunctionData("writeChunk", [hexName, index, '0x']);
+            if (clearState === REMOVE_NORMAL) {
+                // check is change
+                let hash;
+                try {
+                    hash = await this.#fileContract.getChunkHash(hexName, index);
+                } catch (e) {
+                    await sleep(3000);
+                    hash = await this.#fileContract.getChunkHash(hexName, index);
+                }
+                if (localHash === hash) {
+                    console.log(`File ${fileName} chunkId: ${index}: The data is not changed.`);
+                    continue;
+                }
+            }
+
+            const blobCount = Math.ceil(fileSize / BLOB_SIZE);
+            const blobHashes = [];
+            const blobLengths = [];
+            for (let i = 0; i < blobCount; i++) {
+                blobHashes[i] = '0x' + sha3(localHash + i);
+                if (i < blobCount - 1) {
+                    blobLengths[i] = BLOB_SIZE;
+                } else {
+                    blobLengths[i] = fileSize - i * BLOB_SIZE;
+                }
+            }
+
+            let cost = await this.#fileContract.upfrontPayment();
+            cost = cost.mul(blobCount);
 
             let estimatedGas;
             try {
-                estimatedGas = await this.#fileContract.estimateGas.writeChunk(hexName, index, '0x');
+                estimatedGas = await this.#fileContract.estimateGas.writeChunk(hexName, index, localHash, blobHashes, blobLengths, {
+                    value: cost
+                });
             } catch (e) {
                 await sleep(3000);
-                estimatedGas = await this.#fileContract.estimateGas.writeChunk(hexName, index, '0x');
+                estimatedGas = await this.#fileContract.estimateGas.writeChunk(hexName, index, localHash, blobHashes, blobLengths, {
+                    value: cost
+                });
             }
-            const {maxFeePerGas, maxPriorityFeePerGas} = await this.#fileContract.provider.getFeeData();
 
+            const {maxFeePerGas, maxPriorityFeePerGas} = await this.#fileContract.provider.getFeeData();
+            const callData = iFace.encodeFunctionData("writeChunk", [hexName, index, localHash, blobHashes, blobLengths]);
+            const file = saveFile(chunk);
             // upload file
             const option = {
                 Nonce: this.getNonce(),
                 To: this.#contractAddress,
-                Value: '0x0',
+                Value: cost,
                 File: file,
                 CallData: callData,
                 GasLimit: estimatedGas.mul(6).div(5).toString(),
