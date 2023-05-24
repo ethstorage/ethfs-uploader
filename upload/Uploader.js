@@ -5,7 +5,7 @@ const {ethers} = require("ethers");
 const {upload} = require('./4844-utils');
 
 const fileAbi = [
-    "function writeChunk(bytes memory name, uint256 chunkId, bytes32 chunkHash, bytes32[] memory blobKeys, uint256[] memory blobLengths) public payable",
+    "function writeChunk(bytes memory name, uint256[] memory chunkIds, uint256[] memory sizes) external payable",
     "function upfrontPayment() external view returns (uint256)",
     "function refund() public",
     "function remove(bytes memory name) external returns (uint256)",
@@ -19,7 +19,8 @@ const REMOVE_FAIL = -1;
 const REMOVE_NORMAL = 0;
 const REMOVE_SUCCESS = 1;
 
-const BLOB_SIZE = 128 *1024;
+const BLOB_SIZE = 4096 * 31;
+const MAX_BLOB_COUNT = 2;
 
 const bufferChunk = (buffer, chunkSize) => {
     let i = 0;
@@ -28,6 +29,16 @@ const bufferChunk = (buffer, chunkSize) => {
     const chunkLength = Math.ceil(len / chunkSize);
     while (i < len) {
         result.push(buffer.slice(i, i += chunkLength));
+    }
+    return result;
+}
+
+const bufferBlob = (buffer) => {
+    let i = 0;
+    let result = [];
+    const len = buffer.length;
+    while (i < len) {
+        result.push(buffer.slice(i, i += BLOB_SIZE));
     }
     return result;
 }
@@ -100,22 +111,41 @@ class Uploader {
         }
     };
 
+    async getCost() {
+        let cost;
+        try {
+            cost = await this.#fileContract.upfrontPayment();
+        } catch (e) {
+            await sleep(3000);
+            cost = await this.#fileContract.upfrontPayment();
+        }
+        return cost;
+    }
+
+    async getChunkHash(hexName, chunkId) {
+        let hash;
+        try {
+            hash = await this.#fileContract.getChunkHash(hexName, chunkId);
+        } catch (e) {
+            await sleep(3000);
+            hash = await this.#fileContract.getChunkHash(hexName, chunkId);
+        }
+        return hash;
+    }
+
     async upload4844File(fileInfo) {
         const {path, name, size} = fileInfo;
         const filePath = path;
         const fileName = name;
-        let fileSize = size;
+        const fileSize = size;
 
-        const iFace = new ethers.utils.Interface(fileAbi);
         const hexName = '0x' + Buffer.from(fileName, 'utf8').toString('hex');
 
         const content = fs.readFileSync(filePath);
         let chunks = [];
-        // Data need to be sliced if file > 128K * 2， 1 blob = 128kb
-        if (fileSize > 2 * BLOB_SIZE) {
-            const chunkSize = Math.ceil(fileSize / (2 * BLOB_SIZE));
-            chunks = bufferChunk(content, chunkSize);
-            fileSize = fileSize / chunkSize;
+        // Data need to be sliced if file > 124K， 1 blob = 4096 * 31 = 124kb
+        if (fileSize > BLOB_SIZE) {
+            chunks = bufferBlob(content);
         } else {
             chunks.push(content);
         }
@@ -125,62 +155,66 @@ class Uploader {
             return {upload: 0, fileName: fileName};
         }
 
+        const cost = await this.getCost();
+
+        const iFace = new ethers.utils.Interface(fileAbi);
         let uploadCount = 0;
         const failFile = [];
-        for (const index in chunks) {
-            const chunk = chunks[index];
-            const localHash = '0x' + sha3(chunk);
+        for (let i = 0, length = chunks.length; i < length; i += MAX_BLOB_COUNT) {
+            const maxCount = i + MAX_BLOB_COUNT > length ? i + MAX_BLOB_COUNT - length : MAX_BLOB_COUNT;
 
+            const chunkDatas = [];
+            const chunkIds = [];
+            const sizes = [];
             if (clearState === REMOVE_NORMAL) {
                 // check is change
-                let hash;
-                try {
-                    hash = await this.#fileContract.getChunkHash(hexName, index);
-                } catch (e) {
-                    await sleep(3000);
-                    hash = await this.#fileContract.getChunkHash(hexName, index);
+                for (let j = 0; j < maxCount; j++) {
+                    const chunkId = i + j;
+                    const localHash = '0x' + sha3(chunks[chunkId]);
+                    const hash = await this.getChunkHash(hexName, chunkId);
+                    if (localHash === hash) {
+                        console.log(`File ${fileName} chunkId: ${chunkId}: The data is not changed.`);
+                    } else {
+                        chunkDatas.push(chunks[chunkId]);
+                        chunkIds.push(chunkId);
+                        sizes.push(chunks[chunkId].length);
+                    }
                 }
-                if (localHash === hash) {
-                    console.log(`File ${fileName} chunkId: ${index}: The data is not changed.`);
+                if (chunkIds.length === 0) {
+                    // no one
                     continue;
                 }
-            }
-
-            const blobCount = Math.ceil(fileSize / BLOB_SIZE);
-            const blobHashes = [];
-            const blobLengths = [];
-            for (let i = 0; i < blobCount; i++) {
-                blobHashes[i] = '0x' + sha3(localHash + i);
-                if (i < blobCount - 1) {
-                    blobLengths[i] = BLOB_SIZE;
-                } else {
-                    blobLengths[i] = fileSize - i * BLOB_SIZE;
+            } else {
+                // new chunk
+                for (let j = 0; j < maxCount; j++) {
+                    const chunkId = i + j;
+                    chunkDatas.push(chunks[chunkId]);
+                    chunkIds.push(chunkId);
+                    sizes.push(chunks[chunkId].length);
                 }
             }
 
-            let cost = await this.#fileContract.upfrontPayment();
-            cost = cost.mul(blobCount);
-
+            const file = saveFile(Buffer.concat(chunkDatas));
+            const value = cost.mul(chunkIds.length);
             let estimatedGas;
             try {
-                estimatedGas = await this.#fileContract.estimateGas.writeChunk(hexName, index, localHash, blobHashes, blobLengths, {
-                    value: cost
+                estimatedGas = await this.#fileContract.estimateGas.writeChunk(hexName, chunkIds, sizes, {
+                    value: value
                 });
             } catch (e) {
                 await sleep(3000);
-                estimatedGas = await this.#fileContract.estimateGas.writeChunk(hexName, index, localHash, blobHashes, blobLengths, {
-                    value: cost
+                estimatedGas = await this.#fileContract.estimateGas.writeChunk(hexName, chunkIds, sizes, {
+                    value: value
                 });
             }
-
             const {maxFeePerGas, maxPriorityFeePerGas} = await this.#fileContract.provider.getFeeData();
-            const callData = iFace.encodeFunctionData("writeChunk", [hexName, index, localHash, blobHashes, blobLengths]);
-            const file = saveFile(chunk);
+            const callData = iFace.encodeFunctionData("writeChunk", [hexName, chunkIds, sizes]);
+
             // upload file
             const option = {
                 Nonce: this.getNonce(),
                 To: this.#contractAddress,
-                Value: cost,
+                Value: value,
                 File: file,
                 CallData: callData,
                 GasLimit: estimatedGas.mul(6).div(5).toString(),
@@ -189,16 +223,18 @@ class Uploader {
                 MaxFeeDataPer: 300000000
             };
             const hash = await upload(this.#chainId, this.#providerUrl, this.#privateKey, option);
-            console.log(`${fileName}, chunkId: ${index}`);
+            console.log(`${fileName}, chunkId: ${chunkIds.toString()}`);
             console.log(`Transaction Id: ${hash}`);
 
             // get result
             const txReceipt = await getTxReceipt(this.#fileContract, hash);
             if (txReceipt && txReceipt.status) {
-                console.log(`File ${fileName} chunkId: ${index} uploaded!`);
+                console.log(`File ${fileName} chunkId: ${chunkIds.toString()} uploaded!`);
                 uploadCount++;
             } else {
-                failFile.push(index);
+                for (let j = 0; j < chunkIds.length; j++) {
+                    failFile.push(chunkIds[i]);
+                }
                 break;
             }
         }
@@ -206,7 +242,7 @@ class Uploader {
         return {
             upload: 1,
             fileName: fileName,
-            cost: 0,
+            cost: cost,
             fileSize: fileSize / 1024,
             uploadCount: uploadCount,
             failFile: failFile
