@@ -243,7 +243,7 @@ class Uploader {
             upload: 1,
             fileName: fileName,
             cost: cost,
-            fileSize: fileSize / 1024,
+            fileSize: fileSize / chunks.length / 1024,
             uploadCount: uploadCount,
             failFile: failFile
         };
@@ -371,6 +371,8 @@ class Uploader {
         if (oldChunkLength > chunkLength) {
             // remove
             return this.removeFile(fileContract, fileName, hexName);
+        } else if (oldChunkLength === 0) {
+            return REMOVE_SUCCESS;
         }
         return REMOVE_NORMAL;
     }
