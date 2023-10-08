@@ -15,7 +15,7 @@
   "dependencies": {
     "colors-cli": "^1.0.28",
     "eth-ens-namehash": "^2.0.8",
-    "ethers": "^5.5.4",
+    "ethers": "^5.7.2",
     "fs": "^0.0.1-security",
     "js-sha3": "^0.8.0",
     "minimist": "^1.2.5",
