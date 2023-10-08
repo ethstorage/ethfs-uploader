@@ -19,7 +19,8 @@
     "fs": "^0.0.1-security",
     "js-sha3": "^0.8.0",
     "minimist": "^1.2.5",
-    "rxjs": "^7.5.5"
+    "rxjs": "^7.5.5",
+    "send-4844-tx": "^1.0.4"
   },
   "bin": {
     "ethfs-uploader": "cli.js"

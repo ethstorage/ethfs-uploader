@@ -152,9 +152,6 @@ const NS_ADDRESS = {
 const ETH_STORAGE_ADDRESS = {
   [DEVNET9_CHAIN_ID]: '0x612901eeBB2156bF3ee59028581D05a0a041ecb8',
 }
-const Support4844Chain = {
-  [DEVNET9_CHAIN_ID]: true,
-};
 
 
 const REMOVE_FAIL = -1;
@@ -368,7 +365,7 @@ const deploy = async (path, domain, key, RPC) => {
       syncPoolSize = 4;
     }
 
-    const isSupport4844 = Support4844Chain[chainId];
+    const isSupport4844 = ETH_STORAGE_ADDRESS[chainId] != null;
     const uploader  = new Uploader(key, providerUrl, chainId, address, isSupport4844);
     await uploader.init();
 
