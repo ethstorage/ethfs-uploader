@@ -18,14 +18,10 @@ const resolverAbi = [
   "function text(bytes32 node, string calldata key) external view returns (string memory)"
 ];
 const fileAbi = [
-  "function write(bytes memory filename, bytes memory data) public payable",
-  "function writeChunk(bytes memory name, uint256 chunkId, bytes memory data) public payable",
   "function files(bytes memory filename) public view returns (bytes memory)",
   "function setDefault(bytes memory _defaultFile) public",
   "function refund() public",
   "function remove(bytes memory name) external returns (uint256)",
-  "function countChunks(bytes memory name) external view returns (uint256)",
-  "function getChunkHash(bytes memory name, uint256 chunkId) public view returns (bytes32)"
 ];
 
 const flatDirectoryAbi = [
@@ -153,19 +149,9 @@ const ETH_STORAGE_ADDRESS = {
   [DEVNET9_CHAIN_ID]: '0x612901eeBB2156bF3ee59028581D05a0a041ecb8',
 }
 
-
-const REMOVE_FAIL = -1;
-const REMOVE_SUCCESS = 1;
-
 const SHORT_NAME_DEFAULT = SHORT_NAME_GALILEO;
 const CHAIN_ID_DEFAULT = GALILEO_CHAIN_ID;
 
-
-let nonce;
-
-const getNonce = () => {
-  return nonce++;
-}
 
 // **** utils ****
 function namehash(inputName) {
@@ -301,25 +287,15 @@ const recursiveFiles = (path, basePath) => {
 
 const removeFile = async (fileContract, fileName, hexName) => {
   const estimatedGas = await fileContract.estimateGas.remove(hexName);
-  const option = {
-    nonce: getNonce(),
+  const tx = await fileContract.remove(hexName, {
     gasLimit: estimatedGas.mul(6).div(5).toString()
-  };
-  let tx;
-  try {
-    tx = await fileContract.remove(hexName, option);
-  } catch (e) {
-    await sleep(3000);
-    tx = await fileContract.remove(hexName, option);
-  }
+  });
   console.log(`Remove Transaction Id: ${tx.hash}`);
   const receipt = await getTxReceipt(fileContract, tx.hash);
   if (receipt.status) {
     console.log(`Remove file: ${fileName} succeeded`);
-    return REMOVE_SUCCESS;
   } else {
     console.log(`Failed to remove file: ${fileName}`);
-    return REMOVE_FAIL;
   }
 }
 
@@ -337,7 +313,7 @@ const checkBalance = async (provider, domainAddr, accountAddr) => {
 
 // **** function ****
 const remove = async (domain, fileName, key, RPC) => {
-  const {providerUrl, chainId, address} = await getWebHandler(domain, RPC);
+  const {providerUrl, address} = await getWebHandler(domain, RPC);
   if (providerUrl && parseInt(address) > 0) {
     const provider = new ethers.providers.JsonRpcProvider(providerUrl);
     const wallet = new ethers.Wallet(key, provider);
@@ -346,7 +322,6 @@ const remove = async (domain, fileName, key, RPC) => {
     await checkBalance(provider, address, wallet.address).then(info => {
       prevInfo = info;
     })
-    nonce = await wallet.getTransactionCount("pending");
     console.log(`Removing file ${fileName}`);
     const hexName = '0x' + Buffer.from(fileName, 'utf8').toString('hex');
     await removeFile(fileContract, fileName, hexName);

@@ -4,8 +4,7 @@ const {ethers} = require("ethers");
 const {Send4844Tx, EncodeBlobs, BLOB_SIZE} = require("send-4844-tx");
 
 const fileAbi = [
-    "function writeChunk(bytes memory name, uint256[] memory chunkIds, uint256[] memory sizes) external payable",
-    "function upfrontPayment() external view returns (uint256)",
+    "function writeChunk(bytes memory name, uint256 chunkId, bytes calldata data) external payable",
     "function refund() public",
     "function remove(bytes memory name) external returns (uint256)",
     "function countChunks(bytes memory name) external view returns (uint256)",
