@@ -15,12 +15,12 @@
   "dependencies": {
     "colors-cli": "^1.0.28",
     "eth-ens-namehash": "^2.0.8",
-    "ethers": "^5.7.2",
+    "ethers": "^6.7.1",
     "fs": "^0.0.1-security",
     "js-sha3": "^0.8.0",
     "minimist": "^1.2.5",
     "rxjs": "^7.5.5",
-    "send-4844-tx": "^1.0.4"
+    "send-4844-tx": "^1.0.5"
   },
   "bin": {
     "ethfs-uploader": "cli.js"

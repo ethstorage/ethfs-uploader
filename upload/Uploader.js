@@ -62,6 +62,7 @@ const getTxReceipt = async (fileContract, transactionHash) => {
 
 class Uploader {
     #chainId;
+    #wallet;
     #fileContract;
     #send4844Tx;
     #nonce;
@@ -69,18 +70,19 @@ class Uploader {
     constructor(pk, rpc, chainId, contractAddress, isSupport4844) {
         this.#chainId = chainId;
 
-        const provider = new ethers.providers.JsonRpcProvider(rpc);
-        const wallet = new ethers.Wallet(pk, provider);
+        const provider = new ethers.JsonRpcProvider(rpc);
+        this.#wallet = new ethers.Wallet(pk, provider);
+
         if (isSupport4844) {
-            this.#fileContract = new ethers.Contract(contractAddress, fileBlobAbi, wallet);
+            this.#fileContract = new ethers.Contract(contractAddress, fileBlobAbi, this.#wallet);
             this.#send4844Tx = new Send4844Tx(rpc, pk);
         } else {
-            this.#fileContract = new ethers.Contract(contractAddress, fileAbi, wallet);
+            this.#fileContract = new ethers.Contract(contractAddress, fileAbi, this.#wallet);
         }
     }
 
     async init() {
-        this.#nonce = await this.#fileContract.signer.getTransactionCount("pending");
+        this.#nonce = await this.#wallet.getNonce();
     }
 
     getNonce() {
@@ -212,9 +214,10 @@ class Uploader {
             }
 
 
-            const tx = await this.#fileContract.populateTransaction.writeChunk(hexName, indexArr, lenArr, {
+            const value = cost * BigInt(blobArr.length);
+            const tx = await this.#fileContract.writeChunk.populateTransaction(hexName, indexArr, lenArr, {
                 nonce: this.getNonce(),
-                value: cost * blobArr.length
+                value: value,
             });
             const hash = await this.#send4844Tx.sendTx(blobArr, tx);
             console.log(`${fileName}, chunkId: ${indexArr}`);
@@ -234,7 +237,7 @@ class Uploader {
         return {
             upload: 1,
             fileName: fileName,
-            cost: cost,
+            cost: Number(ethers.formatEther(cost)),
             fileSize: fileSize / blobLength / 1024,
             uploadCount: uploadCount,
             failFile: failFile
@@ -306,12 +309,12 @@ class Uploader {
             let estimatedGas;
             try {
                 estimatedGas = await this.#fileContract.estimateGas.writeChunk(hexName, index, hexData, {
-                    value: ethers.utils.parseEther(cost.toString())
+                    value: ethers.parseEther(cost.toString())
                 });
             } catch (e) {
                 await sleep(3000);
                 estimatedGas = await this.#fileContract.estimateGas.writeChunk(hexName, index, hexData, {
-                    value: ethers.utils.parseEther(cost.toString())
+                    value: ethers.parseEther(cost.toString())
                 });
             }
 
@@ -319,7 +322,7 @@ class Uploader {
             const option = {
                 nonce: this.getNonce(),
                 gasLimit: estimatedGas.mul(6).div(5).toString(),
-                value: ethers.utils.parseEther(cost.toString())
+                value: ethers.parseEther(cost.toString())
             };
             let tx;
             try {
