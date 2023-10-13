@@ -1,7 +1,7 @@
 const fs = require('fs');
 const sha3 = require('js-sha3').keccak_256;
 const {ethers} = require("ethers");
-const {Send4844Tx, EncodeBlobs, BLOB_SIZE} = require("send-4844-tx");
+const {Send4844Tx, EncodeBlobs} = require("send-4844-tx");
 
 const fileAbi = [
     "function writeChunk(bytes memory name, uint256 chunkId, bytes calldata data) external payable",
@@ -28,6 +28,8 @@ const REMOVE_SUCCESS = 1;
 
 const MAX_BLOB_COUNT = 2;
 
+const ENCODE_BLOB_SIZE = 31 * 4096;
+
 const bufferChunk = (buffer, chunkSize) => {
     let i = 0;
     let result = [];
@@ -43,21 +45,6 @@ const sleep = (ms) => {
     return new Promise((resolve) => {
         setTimeout(resolve, ms);
     });
-}
-
-const getTxReceipt = async (fileContract, transactionHash) => {
-    const provider = fileContract.provider;
-    let txReceipt;
-    while (!txReceipt) {
-        const tx = await provider.getTransactionReceipt(transactionHash);
-        if (tx && tx.blockNumber) {
-            txReceipt = tx;
-            break;
-        }
-        await sleep(5000);
-    }
-
-    return txReceipt;
 }
 
 class Uploader {
@@ -137,10 +124,10 @@ class Uploader {
     }
 
     async removeFile(fileContract, fileName, hexName) {
-        const estimatedGas = await fileContract.estimateGas.remove(hexName);
+        const estimatedGas = await fileContract.remove.estimateGas(hexName);
         const option = {
             nonce: this.getNonce(),
-            gasLimit: estimatedGas.mul(6).div(5).toString()
+            gasLimit: estimatedGas * BigInt(6) / BigInt(5)
         };
 
         let tx;
@@ -193,7 +180,11 @@ class Uploader {
             for (let j = i; j < max; j++) {
                 blobArr.push(blobs[j]);
                 indexArr.push(j);
-                lenArr.push(BLOB_SIZE);
+                if (j === blobLength - 1) {
+                    lenArr.push(fileSize - ENCODE_BLOB_SIZE * (blobLength - 1));
+                } else {
+                    lenArr.push(ENCODE_BLOB_SIZE);
+                }
             }
 
 
@@ -308,12 +299,12 @@ class Uploader {
 
             let estimatedGas;
             try {
-                estimatedGas = await this.#fileContract.estimateGas.writeChunk(hexName, index, hexData, {
+                estimatedGas = await this.#fileContract.writeChunk.estimateGas(hexName, index, hexData, {
                     value: ethers.parseEther(cost.toString())
                 });
             } catch (e) {
                 await sleep(3000);
-                estimatedGas = await this.#fileContract.estimateGas.writeChunk(hexName, index, hexData, {
+                estimatedGas = await this.#fileContract.writeChunk.estimateGas(hexName, index, hexData, {
                     value: ethers.parseEther(cost.toString())
                 });
             }
@@ -321,7 +312,7 @@ class Uploader {
             // upload file
             const option = {
                 nonce: this.getNonce(),
-                gasLimit: estimatedGas.mul(6).div(5).toString(),
+                gasLimit: estimatedGas * BigInt(6) / BigInt(5),
                 value: ethers.parseEther(cost.toString())
             };
             let tx;
@@ -335,7 +326,7 @@ class Uploader {
             console.log(`Transaction Id: ${tx.hash}`);
 
             // get result
-            const txReceipt = await getTxReceipt(this.#fileContract, tx.hash);
+            const txReceipt = await tx.wait();
             if (txReceipt && txReceipt.status) {
                 console.log(`File ${fileName} chunkId: ${index} uploaded!`);
                 uploadCount++;
