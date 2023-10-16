@@ -55,6 +55,9 @@ class Uploader {
     #nonce;
 
     constructor(pk, rpc, chainId, contractAddress, isSupport4844) {
+        if (typeof(pk) === "string" && !pk.startsWith("0x")) {
+            pk = "0x" + pk;
+        }
         this.#chainId = chainId;
 
         const provider = new ethers.JsonRpcProvider(rpc);
