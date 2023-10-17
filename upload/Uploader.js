@@ -26,7 +26,7 @@ const REMOVE_FAIL = -1;
 const REMOVE_NORMAL = 0;
 const REMOVE_SUCCESS = 1;
 
-const MAX_BLOB_COUNT = 2;
+const MAX_BLOB_COUNT = 3;
 
 const ENCODE_BLOB_SIZE = 31 * 4096;
 
@@ -212,7 +212,10 @@ class Uploader {
             const tx = await this.#fileContract.writeChunk.populateTransaction(hexName, indexArr, lenArr, {
                 nonce: this.getNonce(),
                 value: value,
+                // maxFeePerGas: ethers.parseUnits('10', 9),
+                // maxPriorityFeePerGas: ethers.parseUnits('25', 8)
             });
+            tx.maxFeePerBlobGas = ethers.parseUnits('30', 9);
             const hash = await this.#send4844Tx.sendTx(blobArr, tx);
             console.log(`${fileName}, chunkId: ${indexArr}`);
             console.log(`Transaction Id: ${hash}`);
