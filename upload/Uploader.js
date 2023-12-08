@@ -162,10 +162,12 @@ class Uploader {
         const content = fs.readFileSync(filePath);
         const blobs = EncodeBlobs(content);
 
-        const clearState = await this.clearOldFile(this.#fileContract, fileName, hexName, blobs.length);
-        if (clearState === REMOVE_FAIL) {
-            return {upload: 0, fileName: fileName};
-        }
+        // TODO can not remove
+        // const clearState = await this.clearOldFile(this.#fileContract, fileName, hexName, blobs.length);
+        // if (clearState === REMOVE_FAIL) {
+        //     return {upload: 0, fileName: fileName};
+        // }
+        const clearState = REMOVE_NORMAL;
 
         const cost = await this.getCost();
         const blobLength = blobs.length;
@@ -215,9 +217,13 @@ class Uploader {
                 // maxFeePerGas: ethers.parseUnits('10', 9),
                 // maxPriorityFeePerGas: ethers.parseUnits('25', 8)
             });
+            const fee = await this.#send4844Tx.getFee();
+            tx.maxFeePerGas = BigInt(fee.maxFeePerGas) + BigInt(1000000);
+            tx.maxPriorityFeePerGas = BigInt(fee.maxPriorityFeePerGas) + BigInt(1000000);
             tx.maxFeePerBlobGas = ethers.parseUnits('30', 9);
-            const hash = await this.#send4844Tx.sendTx(blobArr, tx);
+
             console.log(`${fileName}, chunkId: ${indexArr}`);
+            const hash = await this.#send4844Tx.sendTx(blobArr, tx);
             console.log(`Transaction Id: ${hash}`);
 
             // get result
