@@ -1,34 +1,32 @@
 const fs = require('fs');
 const sha3 = require('js-sha3').keccak_256;
 const {ethers} = require("ethers");
-const {Send4844Tx, EncodeBlobs} = require("send-4844-tx");
-
-const fileAbi = [
-    "function writeChunk(bytes memory name, uint256 chunkId, bytes calldata data) external payable",
-    "function refund() public",
-    "function remove(bytes memory name) external returns (uint256)",
-    "function countChunks(bytes memory name) external view returns (uint256)",
-    "function getChunkHash(bytes memory name, uint256 chunkId) public view returns (bytes32)"
-];
+const {BlobUploader, EncodeBlobs, BLOB_FILE_SIZE} = require("ethstorage-sdk");
 
 const fileBlobAbi = [
-    "function writeChunk(bytes memory name, uint256[] memory chunkIds, uint256[] memory sizes) external payable",
+    "function writeChunk(bytes memory name, uint256 chunkId, bytes calldata data) external payable",
+    "function writeChunks(bytes memory name, uint256[] memory chunkIds, uint256[] memory sizes) external payable",
     "function upfrontPayment() external view returns (uint256)",
-    "function refund() public",
     "function remove(bytes memory name) external returns (uint256)",
     "function countChunks(bytes memory name) external view returns (uint256)",
-    "function getChunkHash(bytes memory name, uint256 chunkId) public view returns (bytes32)"
+    "function getChunkHash(bytes memory name, uint256 chunkId) public view returns (bytes32)",
+    "function isSupportBlob() view public returns (bool)"
 ];
 
 const GALILEO_CHAIN_ID = 3334;
+
 
 const REMOVE_FAIL = -1;
 const REMOVE_NORMAL = 0;
 const REMOVE_SUCCESS = 1;
 
+
 const MAX_BLOB_COUNT = 3;
 
-const ENCODE_BLOB_SIZE = 31 * 4096;
+
+const VERSION_CALL_DATA = 0;
+const VERSION_BLOB = 1;
+
 
 const bufferChunk = (buffer, chunkSize) => {
     let i = 0;
@@ -50,29 +48,29 @@ const sleep = (ms) => {
 class Uploader {
     #chainId;
     #wallet;
-    #fileContract;
-    #send4844Tx;
     #nonce;
+    #uploadType;
 
-    constructor(pk, rpc, chainId, contractAddress, isSupport4844) {
-        if (typeof(pk) === "string" && !pk.startsWith("0x")) {
-            pk = "0x" + pk;
-        }
+    #fileContract;
+    #blobUploader;
+
+
+    constructor(pk, rpc, chainId, contractAddress, uploadType) {
+        this.#uploadType = uploadType;
         this.#chainId = chainId;
-
         const provider = new ethers.JsonRpcProvider(rpc);
         this.#wallet = new ethers.Wallet(pk, provider);
 
-        if (isSupport4844) {
-            this.#fileContract = new ethers.Contract(contractAddress, fileBlobAbi, this.#wallet);
-            this.#send4844Tx = new Send4844Tx(rpc, pk);
-        } else {
-            this.#fileContract = new ethers.Contract(contractAddress, fileAbi, this.#wallet);
-        }
+        this.#fileContract = new ethers.Contract(contractAddress, fileBlobAbi, this.#wallet);
+        this.#blobUploader = new BlobUploader(rpc, pk);
     }
 
     async init() {
         this.#nonce = await this.#wallet.getNonce();
+        if (this.#uploadType === VERSION_BLOB) {
+            return await this.supportBlob();
+        }
+        return true;
     }
 
     getNonce() {
@@ -80,12 +78,20 @@ class Uploader {
     }
 
     async uploadFile(fileInfo) {
-        if (this.#send4844Tx) {
+        if (this.#uploadType === VERSION_BLOB) {
             return await this.upload4844File(fileInfo);
         } else {
             return await this.uploadOldFile(fileInfo);
         }
     };
+
+    async supportBlob() {
+        try {
+            return await this.#fileContract.isSupportBlob();
+        } catch (e) {
+            return false;
+        }
+    }
 
     async getCost() {
         let cost;
@@ -178,17 +184,14 @@ class Uploader {
             const blobArr = [];
             const indexArr = [];
             const lenArr = [];
-            let max = i + MAX_BLOB_COUNT;
-            if (max > blobLength) {
-                max = blobLength;
-            }
+            let max = i + MAX_BLOB_COUNT > blobLength ? blobLength : i + MAX_BLOB_COUNT;
             for (let j = i; j < max; j++) {
                 blobArr.push(blobs[j]);
                 indexArr.push(j);
                 if (j === blobLength - 1) {
-                    lenArr.push(fileSize - ENCODE_BLOB_SIZE * (blobLength - 1));
+                    lenArr.push(fileSize - BLOB_FILE_SIZE * (blobLength - 1));
                 } else {
-                    lenArr.push(ENCODE_BLOB_SIZE);
+                    lenArr.push(BLOB_FILE_SIZE);
                 }
             }
 
@@ -197,7 +200,7 @@ class Uploader {
                 let hasChange = false;
                 for (let j = 0; j < blobArr.length; j++) {
                     const dataHash = await this.getChunkHash(hexName, indexArr[j]);
-                    const localHash = this.#send4844Tx.getBlobHash(blobArr[j]);
+                    const localHash = this.#blobUploader.getBlobHash(blobArr[j]);
                     if (dataHash !== localHash) {
                         hasChange = true;
                         break;
@@ -210,24 +213,22 @@ class Uploader {
             }
 
 
+            const fee = await this.#blobUploader.getFee();
             const value = cost * BigInt(blobArr.length);
             const tx = await this.#fileContract.writeChunk.populateTransaction(hexName, indexArr, lenArr, {
                 nonce: this.getNonce(),
                 value: value,
-                // maxFeePerGas: ethers.parseUnits('10', 9),
-                // maxPriorityFeePerGas: ethers.parseUnits('25', 8)
+                maxFeePerGas: fee.maxFeePerGas * BigInt(6) / BigInt(5),
+                maxPriorityFeePerGas: fee.maxPriorityFeePerGas * BigInt(6) / BigInt(5),
             });
-            const fee = await this.#send4844Tx.getFee();
-            tx.maxFeePerGas = BigInt(fee.maxFeePerGas) + BigInt(1000000);
-            tx.maxPriorityFeePerGas = BigInt(fee.maxPriorityFeePerGas) + BigInt(1000000);
             tx.maxFeePerBlobGas = ethers.parseUnits('30', 9);
 
             console.log(`${fileName}, chunkId: ${indexArr}`);
-            const hash = await this.#send4844Tx.sendTx(blobArr, tx);
+            const hash = await this.#blobUploader.sendTx(blobArr, tx);
             console.log(`Transaction Id: ${hash}`);
 
             // get result
-            const txReceipt = await this.#send4844Tx.getTxReceipt(hash);
+            const txReceipt = await this.#blobUploader.getTxReceipt(hash);
             if (txReceipt && txReceipt.status) {
                 console.log(`File ${fileName} chunkId: ${indexArr} uploaded!`);
                 uploadCount += indexArr.length;

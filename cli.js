@@ -1,24 +1,58 @@
 #!/usr/bin/env node
-const args = require('minimist')(
-  process.argv.slice(2),
-  {
-    string: ['_', 'address', 'privateKey', 'RPC', 'chainId', 'file']
-  }
-);
-
 const { create, refund, deploy, remove, setDefault } = require("./index");
-if (args.create) {
-  create(args.privateKey, args.chainId, args.RPC);
-} else if(args.refund) {
-  refund(args.address, args.privateKey, args.RPC);
-} else if(args.default) {
-  setDefault(args.address, args.file, args.privateKey, args.RPC);
-} else if (args.remove) {
-  remove(args.address, args.file, args.privateKey, args.RPC)
-} else {
-  if (args.privateKey) {
-    deploy(args._[0], args._[1], args.privateKey, args.RPC);
-  } else {
-    deploy(args._[0], args._[1], args._[2], args.RPC);
-  }
-}
+const { program } = require('commander');
+program.version(require('./package.json').version);
+
+program
+    .option('-p, --privateKey', 'private key')
+    .option('-a, --address', 'contract address')
+    .option('-r, --rpc', 'provider url')
+    .option('-f, --file', 'upload file path or name')
+    .option('-c, --chainId', 'chain id')
+    .option('-t, --type', 'uploader type');
+
+program
+    .command('create')
+    .argument('<privateKey>')
+    .argument('[chainId]')
+    .argument('[rpc]')
+    .description('deploy a flat directory contract')
+    .action(create);
+
+program
+    .command('refund')
+    .argument('<privateKey>')
+    .argument('<address>')
+    .argument('[rpc]')
+    .description('refund stake token')
+    .action(refund);
+
+program
+    .command('default')
+    .argument('<privateKey>')
+    .argument('<address>')
+    .argument('<file>')
+    .argument('[rpc]')
+    .description('set the default file for flat directory')
+    .action(setDefault);
+
+program
+    .command('remove')
+    .argument('<privateKey>')
+    .argument('<address>')
+    .argument('<file>')
+    .argument('[rpc]')
+    .description('set the default file for flat directory')
+    .action(remove);
+
+program
+    .command('deploy')
+    .argument('[privateKey]')
+    .argument('[address]')
+    .argument('[file]')
+    .argument('[rpc]')
+    .argument('[type]')
+    .description('set the default file for flat directory')
+    .action(deploy);
+
+program.parse(process.argv);
