@@ -2,6 +2,8 @@ const fs = require('fs');
 const sha3 = require('js-sha3').keccak_256;
 const {ethers} = require("ethers");
 const {BlobUploader, EncodeBlobs, BLOB_FILE_SIZE} = require("ethstorage-sdk");
+const color = require("colors-cli/safe");
+const error = color.red.bold;
 
 const fileBlobAbi = [
     "function writeChunk(bytes memory name, uint256 chunkId, bytes calldata data) external payable",
@@ -10,7 +12,8 @@ const fileBlobAbi = [
     "function remove(bytes memory name) external returns (uint256)",
     "function countChunks(bytes memory name) external view returns (uint256)",
     "function getChunkHash(bytes memory name, uint256 chunkId) public view returns (bytes32)",
-    "function isSupportBlob() view public returns (bool)"
+    "function isSupportBlob() view public returns (bool)",
+    "function getFileMode(bytes memory name) public view returns(uint256)"
 ];
 
 const GALILEO_CHAIN_ID = 3334;
@@ -24,8 +27,8 @@ const REMOVE_SUCCESS = 1;
 const MAX_BLOB_COUNT = 3;
 
 
-const VERSION_CALL_DATA = 0;
-const VERSION_BLOB = 1;
+const VERSION_CALL_DATA = '1';
+const VERSION_BLOB = '2';
 
 
 const bufferChunk = (buffer, chunkSize) => {
@@ -90,6 +93,15 @@ class Uploader {
             return await this.#fileContract.isSupportBlob();
         } catch (e) {
             return false;
+        }
+    }
+
+    async getFileMode(hexName) {
+        try {
+            return await this.#fileContract.getFileMode(hexName);
+        } catch (e) {
+            await sleep(3000);
+            return await this.#fileContract.getFileMode(hexName);
         }
     }
 
@@ -164,6 +176,12 @@ class Uploader {
         const fileSize = size;
 
         const hexName = '0x' + Buffer.from(fileName, 'utf8').toString('hex');
+        const fileMod = await this.getFileMode(hexName);
+        if (fileMod === BigInt(VERSION_CALL_DATA)) {
+            console.log(error(`ERROR: This file does not support blob upload!`));
+            return {upload: 0, fileName: fileName};
+        }
+
 
         const content = fs.readFileSync(filePath);
         const blobs = EncodeBlobs(content);
@@ -215,23 +233,30 @@ class Uploader {
 
             const fee = await this.#blobUploader.getFee();
             const value = cost * BigInt(blobArr.length);
-            const tx = await this.#fileContract.writeChunk.populateTransaction(hexName, indexArr, lenArr, {
+            const tx = await this.#fileContract.writeChunks.populateTransaction(hexName, indexArr, lenArr, {
                 nonce: this.getNonce(),
                 value: value,
                 maxFeePerGas: fee.maxFeePerGas * BigInt(6) / BigInt(5),
                 maxPriorityFeePerGas: fee.maxPriorityFeePerGas * BigInt(6) / BigInt(5),
             });
             tx.maxFeePerBlobGas = ethers.parseUnits('30', 9);
-
             console.log(`${fileName}, chunkId: ${indexArr}`);
-            const hash = await this.#blobUploader.sendTx(blobArr, tx);
-            console.log(`Transaction Id: ${hash}`);
 
+            let hash;
+            try {
+                hash = await this.#blobUploader.sendTx(tx, blobArr);
+                console.log(`Transaction Id: ${hash}`);
+            } catch (e) {}
             // get result
-            const txReceipt = await this.#blobUploader.getTxReceipt(hash);
-            if (txReceipt && txReceipt.status) {
-                console.log(`File ${fileName} chunkId: ${indexArr} uploaded!`);
-                uploadCount += indexArr.length;
+            if (hash) {
+                const txReceipt = await this.#blobUploader.getTxReceipt(hash);
+                if (txReceipt && txReceipt.status) {
+                    console.log(`File ${fileName} chunkId: ${indexArr} uploaded!`);
+                    uploadCount += indexArr.length;
+                } else {
+                    failFile.push(indexArr[0]);
+                    break;
+                }
             } else {
                 failFile.push(indexArr[0]);
                 break;
@@ -255,6 +280,12 @@ class Uploader {
         let fileSize = size;
 
         const hexName = '0x' + Buffer.from(fileName, 'utf8').toString('hex');
+        const fileMod = await this.getFileMode(hexName);
+        if (fileMod === BigInt(VERSION_BLOB)) {
+            console.log(error(`ERROR: This file does not support calldata upload!`));
+            return {upload: 0, fileName: fileName};
+        }
+
         const content = fs.readFileSync(filePath);
         let chunks = [];
         if (this.#chainId === GALILEO_CHAIN_ID) {
@@ -360,4 +391,7 @@ class Uploader {
     }
 }
 
-module.exports = Uploader
+module.exports = {
+    Uploader,
+    VERSION_BLOB
+}

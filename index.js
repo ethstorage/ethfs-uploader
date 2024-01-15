@@ -4,9 +4,9 @@ const { ethers } = require("ethers");
 const { normalize } = require('eth-ens-namehash');
 const sha3 = require('js-sha3').keccak_256;
 const { from, mergeMap } = require('rxjs');
+const {Uploader, VERSION_BLOB} = require("./upload/Uploader");
 
 const color = require('colors-cli/safe')
-const Uploader = require("./upload/Uploader");
 const error = color.red.bold;
 const notice = color.blue;
 
@@ -265,13 +265,13 @@ const checkBalance = async (provider, domainAddr, accountAddr) => {
 
 // **** function ****
 const remove = async (key, domain, fileName, rpc) => {
+  if (!ethers.isHexString(key)) {
+    console.error(error(`ERROR: Invalid private key!`));
+    return;
+  }
+
   const {providerUrl, address} = await getWebHandler(domain, rpc);
   if (providerUrl && parseInt(address) > 0) {
-    if (!ethers.isHexString(key)) {
-      console.error(error(`ERROR: Invalid private key!`));
-      return;
-    }
-
     console.log(`Removing file ${fileName}`);
     const provider = new ethers.JsonRpcProvider(providerUrl);
     const wallet = new ethers.Wallet(key, provider);
@@ -290,7 +290,12 @@ const remove = async (key, domain, fileName, rpc) => {
   }
 }
 
-const deploy = async (key, domain, path, rpc, type) => {
+const deploy = async (key, domain, path, rpc, type = VERSION_BLOB) => {
+  if (!ethers.isHexString(key)) {
+    console.error(error(`ERROR: Invalid private key!`));
+    return;
+  }
+
   const {providerUrl, chainId, address} = await getWebHandler(domain, rpc);
   if (providerUrl && parseInt(address) > 0) {
     let syncPoolSize = 15;
@@ -300,10 +305,10 @@ const deploy = async (key, domain, path, rpc, type) => {
       syncPoolSize = 1;
     }
 
-    const uploader  = new Uploader(key, providerUrl, chainId, address, Number(type));
+    const uploader  = new Uploader(key, providerUrl, chainId, address, type);
     const check = await uploader.init();
     if (!check) {
-      console.log(`ERROR: The current network does not support uploading files of this type.  Type=${type}`);
+      console.log(`ERROR: The current network does not support this upload type, please switch to another type.  Type=${type}`);
       return;
     }
 
@@ -367,13 +372,13 @@ const createDirectory = async (key, chainId = CHAIN_ID_DEFAULT, rpc) => {
 };
 
 const refund = async (key, domain, rpc) => {
+  if (!ethers.isHexString(key)) {
+    console.error(error(`ERROR: Invalid private key!`));
+    return;
+  }
+
   const {providerUrl, address} = await getWebHandler(domain, rpc);
   if (providerUrl && parseInt(address) > 0) {
-    if (!ethers.isHexString(key)) {
-      console.error(error(`ERROR: Invalid private key!`));
-      return;
-    }
-
     const ethStorage = new EthStorage(providerUrl, key, address);
     await ethStorage.refund();
   } else {
@@ -382,13 +387,13 @@ const refund = async (key, domain, rpc) => {
 };
 
 const setDefault = async (key, domain, filename, rpc) => {
+  if (!ethers.isHexString(key)) {
+    console.error(error(`ERROR: Invalid private key!`));
+    return;
+  }
+
   const {providerUrl, address} = await getWebHandler(domain, rpc);
   if (providerUrl && parseInt(address) > 0) {
-    if (!ethers.isHexString(key)) {
-      console.error(error(`ERROR: Invalid private key!`));
-      return;
-    }
-
     const ethStorage = new EthStorage(providerUrl, key, address);
     await ethStorage.setDefaultFile(filename);
   } else {
