@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { EthStorage } = require("ethstorage-sdk");
+const { EthStorage, DownloadFile } = require("ethstorage-sdk");
 const { ethers } = require("ethers");
 const { normalize } = require('eth-ens-namehash');
 const sha3 = require('js-sha3').keccak_256;
@@ -7,6 +7,7 @@ const { from, mergeMap } = require('rxjs');
 const {Uploader, VERSION_BLOB} = require("./upload/Uploader");
 
 const color = require('colors-cli/safe')
+const os = require("os");
 const error = color.red.bold;
 const notice = color.blue;
 
@@ -269,6 +270,14 @@ const remove = async (key, domain, fileName, rpc) => {
     console.error(error(`ERROR: Invalid private key!`));
     return;
   }
+  if (!domain) {
+    console.error(error(`ERROR: Invalid address!`));
+    return;
+  }
+  if (!fileName) {
+    console.error(error(`ERROR: Invalid file name!`));
+    return;
+  }
 
   const {providerUrl, address} = await getWebHandler(domain, rpc);
   if (providerUrl && parseInt(address) > 0) {
@@ -295,6 +304,10 @@ const deploy = async (key, domain, path, rpc, type = VERSION_BLOB) => {
     console.error(error(`ERROR: Invalid private key!`));
     return;
   }
+  if (!domain) {
+    console.error(error(`ERROR: Invalid address!`));
+    return;
+  }
 
   const {providerUrl, chainId, address} = await getWebHandler(domain, rpc);
   if (providerUrl && parseInt(address) > 0) {
@@ -302,7 +315,7 @@ const deploy = async (key, domain, path, rpc, type = VERSION_BLOB) => {
     if (chainId === ARBITRUM_NOVE_CHAIN_ID) {
       syncPoolSize = 4;
     } else if(chainId === DEVNET_CHAIN_ID) {
-      syncPoolSize = 1;
+      syncPoolSize = 2;
     }
 
     const uploader  = new Uploader(key, providerUrl, chainId, address, type);
@@ -376,6 +389,10 @@ const refund = async (key, domain, rpc) => {
     console.error(error(`ERROR: Invalid private key!`));
     return;
   }
+  if (!domain) {
+    console.error(error(`ERROR: Invalid address!`));
+    return;
+  }
 
   const {providerUrl, address} = await getWebHandler(domain, rpc);
   if (providerUrl && parseInt(address) > 0) {
@@ -391,6 +408,10 @@ const setDefault = async (key, domain, filename, rpc) => {
     console.error(error(`ERROR: Invalid private key!`));
     return;
   }
+  if (!domain) {
+    console.error(error(`ERROR: Invalid address!`));
+    return;
+  }
 
   const {providerUrl, address} = await getWebHandler(domain, rpc);
   if (providerUrl && parseInt(address) > 0) {
@@ -400,6 +421,31 @@ const setDefault = async (key, domain, filename, rpc) => {
     console.log(error(`ERROR: ${domain} domain doesn't exist`));
   }
 };
+
+const download = async (domain, fileName, savePath, rpc) => {
+  if (!domain) {
+    console.error(error(`ERROR: Invalid address!`));
+    return;
+  }
+  if (!fileName) {
+    console.error(error(`ERROR: Invalid file name!`));
+    return;
+  }
+
+  const {providerUrl, address} = await getWebHandler(domain, rpc);
+  if (providerUrl && parseInt(address) > 0) {
+    const buf = await DownloadFile(providerUrl, address, fileName);
+    if (buf.length > 0) {
+      savePath = savePath ?? `${os.tmpdir()}/${fileName}`;
+      fs.writeFileSync(savePath, buf);
+      console.log(`Success: file path is ${savePath}`);
+    } else {
+      console.log(error(`ERROR: The download of ${fileName} failed or the file does not exist.`));
+    }
+  } else {
+    console.log(error(`ERROR: ${domain} domain doesn't exist`));
+  }
+}
 // **** function ****
 
 module.exports.deploy = deploy;
@@ -407,3 +453,4 @@ module.exports.create = createDirectory;
 module.exports.refund = refund;
 module.exports.remove = remove;
 module.exports.setDefault = setDefault;
+module.exports.download = download;

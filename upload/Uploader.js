@@ -178,7 +178,7 @@ class Uploader {
         const hexName = '0x' + Buffer.from(fileName, 'utf8').toString('hex');
         const fileMod = await this.getFileMode(hexName);
         if (fileMod === BigInt(VERSION_CALL_DATA)) {
-            console.log(error(`ERROR: This file does not support blob upload!`));
+            console.log(error(`ERROR: This file does not support blob upload! file=${fileName}`));
             return {upload: 0, fileName: fileName};
         }
 
@@ -282,7 +282,7 @@ class Uploader {
         const hexName = '0x' + Buffer.from(fileName, 'utf8').toString('hex');
         const fileMod = await this.getFileMode(hexName);
         if (fileMod === BigInt(VERSION_BLOB)) {
-            console.log(error(`ERROR: This file does not support calldata upload!`));
+            console.log(error(`ERROR: This file does not support calldata upload! file=${fileName}`));
             return {upload: 0, fileName: fileName};
         }
 
