@@ -15,7 +15,6 @@ npm install eth-fs
 | -c         | --chainId    | chain id                                     |
 | -r         | --rpc        | provider url                                 |
 | -t         | --type       | file upload type<br/>calldata: 1<br/>blob: 2 |
-| -s         | --savePath   | path to save file                            |
  <br/>
 
 ## Supported networks
@@ -75,9 +74,9 @@ galileo
 Galileo is the default network if it's not specified, otherwise, you should use "--chainId" to set it. 
 RPC should also be specified if the network is Ethereum mainnet or an unlisted network.
 ```
-npx eth-fs create -p <private-key>
-npx eth-fs create -p <private-key> -c [chainId]
-npx eth-fs create --privateKey <private-key> --chainId [chainId] --rpc [rpc]
+npx eth-fs create -p <privateKey>
+npx eth-fs create -p <privateKey> -c [chainId]
+npx eth-fs create --privateKey <privateKey> --chainId [chainId] --rpc [rpc]
 
 // output: contract address 
 ```
@@ -97,11 +96,11 @@ If you want to use name instead of FlatDirectory address, the name should be poi
 address in advance. Click [here](https://docs.web3url.io/advanced-topics/bind-ens-name-to-a-chain-specific-address) for details.
 ```
 FlatDirectory address
-    npx eth-fs deploy -f <directory|file> -a <address> -p <private-key> -r [rpc] -t [upload type]
+    npx eth-fs deploy -f <directory|file> -a <address> -p <privateKey> -r [rpc] -t [upload type]
 ens
-    npx eth-fs deploy -f <directory|file> -a <name> -p <private-key> -r [rpc] -t [upload type]
+    npx eth-fs deploy -f <directory|file> -a <name> -p <privateKey> -r [rpc] -t [upload type]
 w3ns
-    npx eth-fs deploy --file <directory|file> --address <name> --privateKey <private-key> --rpc [rpc] --type [upload type]
+    npx eth-fs deploy --file <directory|file> --address <name> --privateKey <privateKey> --rpc [rpc] --type [upload type]
 ```
 ##### Example
 ```
@@ -119,11 +118,11 @@ w3ns
 ### Set FlatDirectory Default Entrance
 ```
 FlatDirectory address
-    npx eth-fs default -a <address> -f <fileName> -p <private-key> -r [rpc]
+    npx eth-fs default -a <address> -f <fileName> -p <privateKey> -r [rpc]
 ens
-    npx eth-fs default -a <name> -f <fileName> -p <private-key> -r [rpc]
+    npx eth-fs default -a <name> -f <fileName> -p <privateKey> -r [rpc]
 w3ns
-    npx eth-fs default --address <name> --file <fileName> --privateKey <private-key> --rpc [rpc]
+    npx eth-fs default --address <name> --file <fileName> --privateKey <privateKey> --rpc [rpc]
 ```
 ##### Example
 ```
@@ -142,11 +141,11 @@ w3ns
 ### Remove File
 ```
 FlatDirectory address
-    npx eth-fs remove -a <address> -f <fileName> -p <private-key> -r [rpc]
+    npx eth-fs remove -a <address> -f <fileName> -p <privateKey> -r [rpc]
 ens
-    npx eth-fs remove -a <name> -f <fileName> -p <private-key> -r [rpc]
+    npx eth-fs remove -a <name> -f <fileName> -p <privateKey> -r [rpc]
 w3ns
-    npx eth-fs remove --address <name> --file <fileName> --privateKey <private-key> --rpc [rpc]
+    npx eth-fs remove --address <name> --file <fileName> --privateKey <privateKey> --rpc [rpc]
 ```
 ##### Example
 ```
@@ -164,21 +163,21 @@ w3ns
 ### Download File
 ```
 FlatDirectory address
-    npx eth-fs download -a <address> -f <fileName> -s [savePath] -r [rpc] 
+    npx eth-fs download -a <address> -f <fileName> -r [rpc] 
 ens
-    npx eth-fs download -a <name> -f <fileName> -s [savePath] -r [rpc] 
+    npx eth-fs download -a <name> -f <fileName> -r [rpc] 
 w3ns
-    npx eth-fs download --address <name> --file <fileName> --savePath [savePath] --rpc [rpc] 
+    npx eth-fs download --address <name> --file <fileName> --rpc [rpc] 
 ```
 ##### Example
 ```
 FlatDirectory address
     npx eth-fs download -a gor:0x1825...2388 -f index.html
-    npx eth-fs download -a xxx:0x1825...2388 -f index.html -s usr/download/index.html -r https://rpc.xxx
+    npx eth-fs download -a xxx:0x1825...2388 -f index.html -r https://rpc.xxx
 ens
     npx eth-fs download -a eth:ens.eth -f home.vue
 w3ns
-    npx eth-fs download --address w3q-g:home.w3q --file home.vue --savePath usr/download/index.html --rpc https://rpc.xxx
+    npx eth-fs download --address w3q-g:home.w3q --file home.vue --rpc https://rpc.xxx
 ```
 <br/>
 

@@ -45,6 +45,7 @@ const SHORT_NAME_POLYGON_ZKEVM_TEST = "zkevmtest";
 const SHORT_NAME_QUARKCHAIN = "qkc-s0";
 const SHORT_NAME_QUARKCHAIN_DEVNET = "qkc-d-s0";
 const SHORT_NAME_DEVNET = 'devnet';
+const SHORT_NAME_ETH_STORAGE = "es";
 
 const GALILEO_CHAIN_ID = 3334;
 const ETHEREUM_CHAIN_ID = 1;
@@ -71,6 +72,7 @@ const POLYGON_ZKEVM_TEST_CHAIN_ID = 1402;
 const QUARKCHAIN_CHAIN_ID = 100001;
 const QUARKCHAIN_DEVNET_CHAIN_ID = 110001;
 const DEVNET_CHAIN_ID = 7011893062;
+const ETH_STORAGE_CHAIN_ID = 3333;
 
 const NETWORK_MAPING = {
   [SHORT_NAME_GALILEO]: GALILEO_CHAIN_ID,
@@ -98,6 +100,7 @@ const NETWORK_MAPING = {
   [SHORT_NAME_QUARKCHAIN]: QUARKCHAIN_CHAIN_ID,
   [SHORT_NAME_QUARKCHAIN_DEVNET]: QUARKCHAIN_DEVNET_CHAIN_ID,
   [SHORT_NAME_DEVNET]: DEVNET_CHAIN_ID,
+  [SHORT_NAME_ETH_STORAGE]: ETH_STORAGE_CHAIN_ID
 }
 
 const PROVIDER_URLS = {
@@ -125,6 +128,7 @@ const PROVIDER_URLS = {
   [QUARKCHAIN_CHAIN_ID]: 'https://mainnet-s0-ethapi.quarkchain.io',
   [QUARKCHAIN_DEVNET_CHAIN_ID]: 'https://devnet-s0-ethapi.quarkchain.io',
   [DEVNET_CHAIN_ID]: 'http://65.109.115.36:8545',
+  [ETH_STORAGE_CHAIN_ID]: 'http://88.99.30.186:9545',
 }
 
 const NS_ADDRESS = {
@@ -422,7 +426,7 @@ const setDefault = async (key, domain, filename, rpc) => {
   }
 };
 
-const download = async (domain, fileName, savePath, rpc) => {
+const download = async (domain, fileName, rpc) => {
   if (!domain) {
     console.error(error(`ERROR: Invalid address!`));
     return;
@@ -432,11 +436,19 @@ const download = async (domain, fileName, savePath, rpc) => {
     return;
   }
 
-  const {providerUrl, address} = await getWebHandler(domain, rpc);
+  let {providerUrl, chainId, address} = await getWebHandler(domain, rpc);
   if (providerUrl && parseInt(address) > 0) {
+    // replace rpc to eth storage
+    if (chainId === DEVNET_CHAIN_ID) {
+      providerUrl = PROVIDER_URLS[ETH_STORAGE_CHAIN_ID];
+    }
     const buf = await DownloadFile(providerUrl, address, fileName);
     if (buf.length > 0) {
-      savePath = savePath ?? `${os.tmpdir()}/${fileName}`;
+      const dir = `${__dirname}/download/`;
+      const savePath = `${dir}/${fileName}`;
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir);
+      }
       fs.writeFileSync(savePath, buf);
       console.log(`Success: file path is ${savePath}`);
     } else {
