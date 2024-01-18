@@ -1,8 +1,16 @@
 # EthFS Uploader
 
 ## Installation
+Globally:
+```bash
+npm install -g eth-fs
+eth-fs deploy <directory|file> <address> <private-key> -r [rpc] -t [upload-type]
 ```
+
+Locally:
+```bash
 npm install eth-fs
+eth-fs deploy <directory|file> <address> <private-key> -r [rpc] -t [upload-type]
 ```
 <br/>
 
@@ -74,17 +82,17 @@ galileo
 Galileo is the default network if it's not specified, otherwise, you should use "--chainId" to set it. 
 RPC should also be specified if the network is Ethereum mainnet or an unlisted network.
 ```
-npx eth-fs create -p <privateKey>
-npx eth-fs create -p <privateKey> -c [chainId]
-npx eth-fs create --privateKey <privateKey> --chainId [chainId] --rpc [rpc]
+eth-fs create -p <privateKey>
+eth-fs create -p <privateKey> -c [chainId]
+eth-fs create -p <privateKey> -c [chainId] -r [rpc]
 
 // output: contract address 
 ```
 ##### Example
 ```
-npx eth-fs create -p 0x32...
-npx eth-fs create -p 0x32... -c 5
-npx eth-fs create --privateKey 0x32... --chainId 1 --rpc https://rpc.ankr.com/eth
+eth-fs create -p 0x32...
+eth-fs create -p 0x32... -c 5
+eth-fs create -p 0x32... -c 1 -r https://rpc.ankr.com/eth
 ```
 <br/>
 
@@ -96,21 +104,21 @@ If you want to use name instead of FlatDirectory address, the name should be poi
 address in advance. Click [here](https://docs.web3url.io/advanced-topics/bind-ens-name-to-a-chain-specific-address) for details.
 ```
 FlatDirectory address
-    npx eth-fs deploy -f <directory|file> -a <address> -p <privateKey> -r [rpc] -t [upload type]
+  eth-fs deploy -f <directory|file> -a <address> -p <privateKey> -r [rpc] -t [uploadType]
 ens
-    npx eth-fs deploy -f <directory|file> -a <name> -p <privateKey> -r [rpc] -t [upload type]
+  eth-fs deploy -f <directory|file> -a <name> -p <privateKey> -r [rpc] -t [uploadType]
 w3ns
-    npx eth-fs deploy --file <directory|file> --address <name> --privateKey <privateKey> --rpc [rpc] --type [upload type]
+  eth-fs deploy -f <directory|file> -a <name> -p <privateKey> -r [rpc] -t [uploadType]
 ```
 ##### Example
 ```
 FlatDirectory address
-    npx eth-fs deploy -f index.html -a gor:0x1825...2388 -p 0x32...
-    npx eth-fs deploy -f index.html -a xxx:0x1825...2388 -p 0x32... -r https://rpc.xxx -t 1
+  eth-fs deploy -f index.html -a gor:0x1825...2388 -p 0x32...
+  eth-fs deploy -f index.html -a xxx:0x1825...2388 -p 0x32... -r https://rpc.xxx -t 1
 ens
-    npx eth-fs deploy -f dist -a eth:ens.eth -p 0x32... -r https://rpc.ankr.com/eth -t 2
+  eth-fs deploy -f dist -a eth:ens.eth -p 0x32... -r https://rpc.ankr.com/eth -t 2
 w3ns
-    npx eth-fs deploy --file dist --address w3q-g:home.w3q --privateKey 0x32... --type 2
+  eth-fs deploy -f dist -a w3q-g:home.w3q -p 0x32... -t 2
 ```
 <br/>
 
@@ -118,21 +126,21 @@ w3ns
 ### Set FlatDirectory Default Entrance
 ```
 FlatDirectory address
-    npx eth-fs default -a <address> -f <fileName> -p <privateKey> -r [rpc]
+  eth-fs default -a <address> -f <fileName> -p <privateKey> -r [rpc]
 ens
-    npx eth-fs default -a <name> -f <fileName> -p <privateKey> -r [rpc]
+  eth-fs default -a <name> -f <fileName> -p <privateKey> -r [rpc]
 w3ns
-    npx eth-fs default --address <name> --file <fileName> --privateKey <privateKey> --rpc [rpc]
+  eth-fs default -a <name> -f <fileName> -p <privateKey> -r [rpc]
 ```
 ##### Example
 ```
 FlatDirectory address
-    npx eth-fs default -a gor:0x1825...2388 -f index.html -p 0x32...
-    npx eth-fs default -a xxx:0x1825...2388 -f index.html -p 0x32... -r https://rpc.xxx
+  eth-fs default -a gor:0x1825...2388 -f index.html -p 0x32...
+  eth-fs default -a xxx:0x1825...2388 -f index.html -p 0x32... -r https://rpc.xxx
 ens
-    npx eth-fs default -a eth:ens.eth -f index.html -p 0x32... -r https://rpc.ankr.com/eth
+  eth-fs default -a eth:ens.eth -f index.html -p 0x32... -r https://rpc.ankr.com/eth
 w3ns
-    npx eth-fs default --address w3q-g:home.w3q --file index.html --privateKey 0x32...  --rpc https://rpc.ankr.com/eth
+  eth-fs default -a w3q-g:home.w3q -f index.html -p 0x32...  -r https://rpc.ankr.com/eth
 ```
 <br/>
 
@@ -141,21 +149,21 @@ w3ns
 ### Remove File
 ```
 FlatDirectory address
-    npx eth-fs remove -a <address> -f <fileName> -p <privateKey> -r [rpc]
+  eth-fs remove -a <address> -f <fileName> -p <privateKey> -r [rpc]
 ens
-    npx eth-fs remove -a <name> -f <fileName> -p <privateKey> -r [rpc]
+  eth-fs remove -a <name> -f <fileName> -p <privateKey> -r [rpc]
 w3ns
-    npx eth-fs remove --address <name> --file <fileName> --privateKey <privateKey> --rpc [rpc]
+  eth-fs remove -a <name> -f <fileName> -p <privateKey> -r [rpc]
 ```
 ##### Example
 ```
 FlatDirectory address
-    npx eth-fs remove -a gor:0x1825...2388 -f index.html -p 0x32...
-    npx eth-fs remove -a xxx:0x1825...2388 -f index.html -p 0x32... -r https://rpc.xxx
+  eth-fs remove -a gor:0x1825...2388 -f index.html -p 0x32...
+  eth-fs remove -a xxx:0x1825...2388 -f index.html -p 0x32... -r https://rpc.xxx
 ens
-    npx eth-fs remove -a eth:ens.eth -f src/home.vue -p 0x32... -r https://rpc.ankr.com/eth
+  eth-fs remove -a eth:ens.eth -f src/home.vue -p 0x32... -r https://rpc.ankr.com/eth
 w3ns
-    npx eth-fs remove --address w3q-g:home.w3q --file src/home.vue --privateKey 0x32... --rpc https://rpc.ankr.com/eth
+  eth-fs remove -a w3q-g:home.w3q -f src/home.vue -p 0x32... -r https://rpc.ankr.com/eth
 ```
 <br/>
 
@@ -163,11 +171,11 @@ w3ns
 ### Download File
 ```
 FlatDirectory address
-    npx eth-fs download -a <address> -f <fileName> -r [rpc] 
+  eth-fs download -a <address> -f <fileName> -r [rpc]
 ens
-    npx eth-fs download -a <name> -f <fileName> -r [rpc] 
+  eth-fs download -a <name> -f <fileName> -r [rpc]
 w3ns
-    npx eth-fs download --address <name> --file <fileName> --rpc [rpc] 
+  eth-fs download --address <name> --file <fileName> --rpc [rpc]
 ```
 ##### Example
 ```
