@@ -64,8 +64,8 @@ galileo
 Galileo is the default network if it's not specified, otherwise, you should use "--chainId" to set it. RPC should also be specified if the network is Ethereum mainnet or an unlisted network.
 ```
 npx ethfs-uploader --create --privateKey <private-key>
-npx ethfs-uploader --create --privateKey <private-key> --chainId <chainId>
-npx ethfs-uploader --create --privateKey <private-key> --chainId <chainId> --RPC <rpc>
+npx ethfs-uploader --create --privateKey <private-key> --chainId <chain-id>
+npx ethfs-uploader --create --privateKey <private-key> --chainId <chain-id> --RPC <rpc>
 
 // output: contract address 
 ```
@@ -84,6 +84,7 @@ If you want to use name instead of FlatDirectory address, the name should be poi
 ```
 FlatDirectory address
     npx ethfs-uploader <directory|file> <address> --privateKey <private-key>
+    npx ethfs-uploader <directory|file> <address> --privateKey <private-key> --chainId <chain-id>
     npx ethfs-uploader <directory|file> <address> --privateKey <private-key> --RPC <rpc-url>
 ens
     npx ethfs-uploader <directory|file> <name> --privateKey <private-key> --RPC <rpc-url>
@@ -94,6 +95,7 @@ w3ns
 ```
 FlatDirectory address
     npx ethfs-uploader index.html gor:0x1825...2388 --privateKey 0x32...
+    npx ethfs-uploader index.html 0x1825...2388 --privateKey 0x32... --chainId 5
     npx ethfs-uploader index.html xxx:0x1825...2388 --privateKey 0x32... --RPC https://rpc.xxx
 ens
     npx ethfs-uploader dist eth:ens.eth --privateKey 0x32... --PRC https://rpc.ankr.com/eth
@@ -106,17 +108,19 @@ w3ns
 ### Set FlatDirectory Default Entrance
 ```
 FlatDirectory address
-    npx ethfs-uploader --default --address <address> --file <fileName> --privateKey <private-key>
-    npx ethfs-uploader --default --address <address> --file <fileName> --privateKey <private-key> --RPC <rpc-url>
+    npx ethfs-uploader --default --address <address> --file <file-name> --privateKey <private-key>
+    npx ethfs-uploader --default --address <address> --file <file-name> --privateKey <private-key> --chainId <chain-id>
+    npx ethfs-uploader --default --address <address> --file <file-name> --privateKey <private-key> --RPC <rpc-url>
 ens
-    npx ethfs-uploader --default --address <name> --file <fileName> --privateKey <private-key> --RPC <rpc-url>
+    npx ethfs-uploader --default --address <name> --file <file-name> --privateKey <private-key> --RPC <rpc-url>
 w3ns
-    npx ethfs-uploader --default --address <name> --file <fileName> --privateKey <private-key>
+    npx ethfs-uploader --default --address <name> --file <file-name> --privateKey <private-key>
 ```
 ##### Example
 ```
 FlatDirectory address
     npx ethfs-uploader --default --address gor:0x1825...2388 --file index.html --privateKey 0x32...
+    npx ethfs-uploader --default --address 0x1825...2388 --file index.html --privateKey 0x32... --chainId 5
     npx ethfs-uploader --default --address xxx:0x1825...2388 --file index.html --privateKey 0x32... --RPC https://rpc.xxx
 ens
     npx ethfs-uploader --default --address eth:ens.eth --file index.html --privateKey 0x32... --RPC https://rpc.ankr.com/eth
@@ -130,17 +134,19 @@ w3ns
 ### Remove File
 ```
 FlatDirectory address
-    npx ethfs-uploader --remove --address <address> --file <fileName> --privateKey <private-key>
-    npx ethfs-uploader --remove --address <address> --file <fileName> --privateKey <private-key> --RPC <rpc-url>
+    npx ethfs-uploader --remove --address <address> --file <file-name> --privateKey <private-key>
+    npx ethfs-uploader --remove --address <address> --file <file-name> --privateKey <private-key> --chainId <chain id>
+    npx ethfs-uploader --remove --address <address> --file <file-name> --privateKey <private-key> --RPC <rpc-url>
 ens
-    npx ethfs-uploader --remove --address <name> --file <fileName> --privateKey <private-key> --RPC <rpc-url>
+    npx ethfs-uploader --remove --address <name> --file <file-name> --privateKey <private-key> --RPC <rpc-url>
 w3ns
-    npx ethfs-uploader --remove --address <name> --file <fileName> --privateKey <private-key>
+    npx ethfs-uploader --remove --address <name> --file <file-name> --privateKey <private-key>
 ```
 ##### Example
 ```
 FlatDirectory address
     npx ethfs-uploader --remove --address gor:0x1825...2388 --file index.html --privateKey 0x32...
+    npx ethfs-uploader --remove --address 0x1825...2388 --file index.html --privateKey 0x32... --chainId 5
     npx ethfs-uploader --remove --address xxx:0x1825...2388 --file index.html --privateKey 0x32... --RPC https://rpc.xxx
 ens
     npx ethfs-uploader --remove --address eth:ens.eth --file src/home.vue --privateKey 0x32... --RPC https://rpc.ankr.com/eth

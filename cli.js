@@ -10,15 +10,15 @@ const { create, refund, deploy, remove, setDefault } = require("./index");
 if (args.create) {
   create(args.privateKey, args.chainId, args.RPC);
 } else if(args.refund) {
-  refund(args.address, args.privateKey, args.RPC);
-} else if(args.default) {
-  setDefault(args.address, args.file, args.privateKey, args.RPC);
+  refund(args.address, args.privateKey, args.RPC, args.chainId);
+} else if (args.default) {
+  setDefault(args.address, args.file, args.privateKey, args.RPC, args.chainId);
 } else if (args.remove) {
-  remove(args.address, args.file, args.privateKey, args.RPC)
+  remove(args.address, args.file, args.privateKey, args.RPC, args.chainId)
 } else {
   if (args.privateKey) {
-    deploy(args._[0], args._[1], args.privateKey, args.RPC);
+    deploy(args._[0], args._[1], args.privateKey, args.RPC, args.chainId);
   } else {
-    deploy(args._[0], args._[1], args._[2], args.RPC);
+    deploy(args._[0], args._[1], args._[2], args.RPC, args.chainId);
   }
 }
