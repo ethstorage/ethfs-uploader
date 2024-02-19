@@ -115,6 +115,7 @@ const NETWORK_MAPING = {
 
 const PROVIDER_URLS = {
   [GALILEO_CHAIN_ID]: 'https://galileo.web3q.io:8545',
+  [ETHEREUM_CHAIN_ID]: 'https://ethereum.publicnode.com',
   [GOERLI_CHAIN_ID]: 'https://rpc.ankr.com/eth_goerli',
   [SEPOLIA_CHAIN_ID]: 'https://rpc.sepolia.org',
   [OPTIMISTIC_CHAIN_ID]: 'https://mainnet.optimism.io',
@@ -151,7 +152,7 @@ const REMOVE_FAIL = -1;
 const REMOVE_NORMAL = 0;
 const REMOVE_SUCCESS = 1;
 
-const SHORT_NAME_DEFAULT = SHORT_NAME_GALILEO;
+const CHAIN_ID_DEFAULT = ETHEREUM_CHAIN_ID;
 
 let nonce;
 
@@ -178,32 +179,68 @@ function namehash(inputName) {
   return '0x' + node
 }
 
-function get3770NameAndAddress(domain) {
-  const domains = domain.split(":");
-  if (domains.length > 1) {
-    return {shortName: domains[0], address: domains[1]};
-  } else if(domain.endsWith(".eth")) {
-    return {shortName: SHORT_NAME_ETHEREUM, address: domain};
+async function getChainIdByRpc(rpc) {
+  if (!rpc) {
+    return;
   }
-  return {shortName: SHORT_NAME_DEFAULT, address: domain};
-}
-
-function getNetWorkIdByShortName(shortName) {
-  let chainId = NETWORK_MAPING[shortName];
-  if (chainId) {
-    return chainId;
-  }
-  return 0;
+  const provider = new ethers.providers.JsonRpcProvider(rpc);
+  const network = await provider.getNetwork();
+  return network.chainId;
 }
 
 // return address or eip3770 address
-async function getWebHandler(domain, RPC) {
+async function getWebHandler(domain, RPC, chainId) {
   // get web handler address, domain is address, xxx.ens, xxx.w3q
-  const {shortName, address} = get3770NameAndAddress(domain);
-  const chainId = getNetWorkIdByShortName(shortName);
+
+  // get chain id by short name
+  let snChainId;
+  let address;
+  const domains = domain.split(":");
+  if (domains.length > 1) {
+    const shortName = domains[0];
+    snChainId = NETWORK_MAPING[shortName];
+    if (!snChainId) {
+      console.error(error(`ERROR: invalid shortName=${shortName} network.`));
+      return;
+    }
+    address = domains[1];
+  } else {
+    address = domain;
+  }
+
+  // get rpc chain id
+  const rpcChainId = await getChainIdByRpc(RPC);
+
+  // get chain id
+  if (chainId) {
+    chainId = Number(chainId);
+    if (snChainId && chainId !== snChainId) {
+      console.error(error(`ERROR: chainId(${chainId}) and short name chainId(${snChainId}) conflict.`));
+      return;
+    }
+    if (rpcChainId && chainId !== rpcChainId) {
+      console.error(error(`ERROR: chainId(${chainId}) and rpc chainId(${rpcChainId}) conflict.`));
+      return;
+    }
+  } else if (snChainId) {
+    if (rpcChainId && snChainId !== rpcChainId) {
+      console.error(error(`ERROR: short name chainId(${snChainId}) and rpc chainId(${rpcChainId}) conflict.`));
+      return;
+    }
+    chainId = snChainId;
+  } else if (rpcChainId) {
+    chainId = rpcChainId;
+  } else {
+    chainId = CHAIN_ID_DEFAULT;
+    if (address.endsWith(".w3q")) {
+      chainId = GALILEO_CHAIN_ID;
+    }
+  }
+
+  // get rpc
   let providerUrl = RPC ?? PROVIDER_URLS[chainId];
   if (!providerUrl) {
-    console.error(error(`ERROR: The network need RPC, please try again after setting RPC!`));
+    console.error(error(`ERROR: The network(${chainId}) need RPC, please try again after setting RPC!`));
     return;
   }
   console.log(`providerUrl = ${providerUrl}\nchainId = ${chainId}\naddress: ${address}\n`);
@@ -232,18 +269,30 @@ async function getWebHandler(domain, RPC) {
     } else {
       webHandler = await resolverContract.text(nameHash, "contentcontract");
     }
-  } catch (e){}
+  } catch (e){
+    console.log(error(`Not Support Domain: ${domain}`));
+    return;
+  }
+
   // address
   if (ethAddrReg.test(webHandler)) {
     return {providerUrl, chainId, address: webHandler};
   }
-  const shortAdd = get3770NameAndAddress(webHandler);
-  const newChainId = getNetWorkIdByShortName(shortAdd.shortName);
+  const short = webHandler.split(":");
+  let shortAdd, shortName;
+  if (short.length > 1) {
+    shortName = domains[0];
+    shortAdd = domains[1];
+  } else {
+    console.error(error(`ERROR: invalid web handler=${webHandler}.`));
+    return;
+  }
+  const newChainId = NETWORK_MAPING[shortName];
   providerUrl = chainId === newChainId ? providerUrl : PROVIDER_URLS[newChainId];
   return {
     providerUrl: providerUrl,
     chainId: newChainId,
-    address: shortAdd.address
+    address: shortAdd
   };
 }
 
@@ -469,8 +518,8 @@ const checkBalance = async (provider, domainAddr, accountAddr) => {
 }
 
 // **** function ****
-const remove = async (domain, fileName, key, RPC) => {
-  const {providerUrl, chainId, address} = await getWebHandler(domain, RPC);
+const remove = async (domain, fileName, key, RPC, chain) => {
+  const {providerUrl, address} = await getWebHandler(domain, RPC, chain);
   if (providerUrl && parseInt(address) > 0) {
     const provider = new ethers.providers.JsonRpcProvider(providerUrl);
     const wallet = new ethers.Wallet(key, provider);
@@ -490,8 +539,8 @@ const remove = async (domain, fileName, key, RPC) => {
   }
 }
 
-const deploy = async (path, domain, key, RPC) => {
-  const {providerUrl, chainId, address} = await getWebHandler(domain, RPC);
+const deploy = async (path, domain, key, RPC, chain) => {
+  const {providerUrl, chainId, address} = await getWebHandler(domain, RPC, chain);
   if (providerUrl && parseInt(address) > 0) {
     let syncPoolSize = 15;
     if (chainId === ARBITRUM_NOVE_CHAIN_ID) {
@@ -545,23 +594,17 @@ const deploy = async (path, domain, key, RPC) => {
   }
 };
 
-const createDirectory = async (key, chainId, RPC) => {
-  chainId = chainId ?? GALILEO_CHAIN_ID;
-
-  if (FACTORY_ADDRESS[chainId]) {
+const createDirectory = async (key, chain = CHAIN_ID_DEFAULT, RPC) => {
+  if (FACTORY_ADDRESS[chain]) {
     // Galileo
-    const provider = new ethers.providers.JsonRpcProvider(PROVIDER_URLS[chainId]);
+    const provider = new ethers.providers.JsonRpcProvider(PROVIDER_URLS[chain]);
     const wallet = new ethers.Wallet(key, provider);
 
-    const factoryAddress = FACTORY_ADDRESS[chainId];
+    const factoryAddress = FACTORY_ADDRESS[chain];
     const factoryContract = new ethers.Contract(factoryAddress, factoryAbi, wallet);
     const tx = await factoryContract.create();
     console.log(`Transaction: ${tx.hash}`);
-    let txReceipt;
-    while (!txReceipt) {
-      txReceipt = await isTransactionMined(provider, tx.hash);
-      await sleep(5000);
-    }
+    let txReceipt = await tx.wait();
     if (txReceipt.status) {
       let iface = new ethers.utils.Interface(factoryAbi);
       let log = iface.parseLog(txReceipt.logs[0]);
@@ -571,9 +614,9 @@ const createDirectory = async (key, chainId, RPC) => {
     }
   } else {
     // other network
-    const providerUrl = RPC ?? PROVIDER_URLS[chainId];
+    const providerUrl = RPC ?? PROVIDER_URLS[chain];
     if (!providerUrl) {
-      console.error(error(`ERROR: The network need RPC, please try again after setting RPC!`));
+      console.error(error(`ERROR: The network=${chain} need RPC, please try again after setting RPC!`));
       return;
     }
 
@@ -587,20 +630,14 @@ const createDirectory = async (key, chainId, RPC) => {
     await contract.deployed();
     if (contract) {
       console.log(`FlatDirectory Address: ${contract.address}`);
-      const estimatedGas = await contract.estimateGas.changeOwner(wallet.address);
-      const tx = await contract.changeOwner(wallet.address, {
-        gasLimit: estimatedGas.mul(6).div(5).toString()
-      });
-      await tx.wait();
-      console.log(`Change Owner: ${contract.address}`);
     } else {
       console.error(`ERROR: transaction failed!`);
     }
   }
 };
 
-const refund = async (domain, key, RPC) => {
-  const {providerUrl, address} = await getWebHandler(domain, RPC);
+const refund = async (domain, key, RPC, chain) => {
+  const {providerUrl, address} = await getWebHandler(domain, RPC, chain);
   if (providerUrl && parseInt(address) > 0) {
     const provider = new ethers.providers.JsonRpcProvider(providerUrl);
     const wallet = new ethers.Wallet(key, provider);
@@ -625,8 +662,8 @@ const refund = async (domain, key, RPC) => {
   }
 };
 
-const setDefault = async (domain, filename, key, RPC) => {
-  const {providerUrl, address} = await getWebHandler(domain, RPC);
+const setDefault = async (domain, filename, key, RPC, chain) => {
+  const {providerUrl, address} = await getWebHandler(domain, RPC, chain);
   if (providerUrl && parseInt(address) > 0) {
     const provider = new ethers.providers.JsonRpcProvider(providerUrl);
     const wallet = new ethers.Wallet(key, provider);
