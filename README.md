@@ -61,7 +61,7 @@ galileo
 
 
 ### Create FlatDirectory Command
-Galileo is the default network if it's not specified, otherwise, you should use "--chainId" to set it. RPC should also be specified if the network is Ethereum mainnet or an unlisted network.
+Ethereum is the default network if it's not specified, otherwise, you should use "--chainId" to set it. RPC should also be specified if the network is an unlisted network.
 ```
 npx ethfs-uploader --create --privateKey <private-key>
 npx ethfs-uploader --create --privateKey <private-key> --chainId <chain-id>
@@ -135,7 +135,7 @@ w3ns
 ```
 FlatDirectory address
     npx ethfs-uploader --remove --address <address> --file <file-name> --privateKey <private-key>
-    npx ethfs-uploader --remove --address <address> --file <file-name> --privateKey <private-key> --chainId <chain id>
+    npx ethfs-uploader --remove --address <address> --file <file-name> --privateKey <private-key> --chainId <chain-id>
     npx ethfs-uploader --remove --address <address> --file <file-name> --privateKey <private-key> --RPC <rpc-url>
 ens
     npx ethfs-uploader --remove --address <name> --file <file-name> --privateKey <private-key> --RPC <rpc-url>

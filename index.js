@@ -115,6 +115,7 @@ const NETWORK_MAPING = {
 
 const PROVIDER_URLS = {
   [GALILEO_CHAIN_ID]: 'https://galileo.web3q.io:8545',
+  [ETHEREUM_CHAIN_ID]: 'https://ethereum.publicnode.com',
   [GOERLI_CHAIN_ID]: 'https://rpc.ankr.com/eth_goerli',
   [SEPOLIA_CHAIN_ID]: 'https://rpc.sepolia.org',
   [OPTIMISTIC_CHAIN_ID]: 'https://mainnet.optimism.io',
